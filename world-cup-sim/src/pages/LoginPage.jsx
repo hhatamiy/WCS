@@ -27,7 +27,14 @@ function LoginPage() {
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      
+      // Check if it's a network error
+      if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
+        setError('Cannot connect to server. Please make sure the backend is running on port 5000.');
+      }
     } finally {
       setLoading(false);
     }
