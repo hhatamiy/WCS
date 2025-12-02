@@ -6,25 +6,67 @@ A React-based frontend application for simulating and managing World Cup tournam
 
 ```
 CS390_TeamProject/
-├── template.html          # HTML template/reference design
-├── world-cup-sim/         # React frontend application
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── api.js              # Axios configuration with JWT handling
-│   │   ├── components/
-│   │   │   └── ProtectedRoute.jsx  # Route protection component
-│   │   ├── pages/
-│   │   │   ├── LoginPage.jsx       # User login page
-│   │   │   ├── RegisterPage.jsx    # User registration page
-│   │   │   ├── DashboardPage.jsx   # Main dashboard with past draws
-│   │   │   ├── DrawSimulatorPage.jsx  # Draw simulation interface
+│
+├── backend/                        # Node.js/Express Backend Server
+│   ├── .env                        # Environment variables (MongoDB URI, JWT_SECRET, PORT)
+│   ├── db.js                       # MongoDB connection configuration
+│   ├── server.js                   # Express server entry point
+│   ├── package.json                # Backend dependencies
+│   ├── package-lock.json           # Dependency lock file
+│   │
+│   ├── models/                     # MongoDB Mongoose Models
+│   │   ├── User.js                 # User schema (username, email, password)
+│   │   ├── Bracket.js              # Bracket prediction model
+│   │   ├── Match.js                # Match model
+│   │   └── Team.js                 # Team model
+│   │
+│   ├── routes/                     # API Route Handlers
+│   │   └── auth.js                 # Authentication routes (POST /auth/login, POST /auth/register)
+│   │
+│   └── middleware/                 # Express Middleware
+│       └── auth.js                 # JWT authentication middleware (if exists)
+│
+├── world-cup-sim/                  # React Frontend Application
+│   ├── public/                     # Static assets
+│   │   └── vite.svg                # Vite logo
+│   │
+│   ├── src/                        # Source code
+│   │   ├── api/                    # API Configuration
+│   │   │   └── api.js              # Axios instance with JWT interceptors
+│   │   │
+│   │   ├── components/             # Reusable React Components
+│   │   │   └── ProtectedRoute.jsx  # Route protection wrapper
+│   │   │
+│   │   ├── pages/                  # Page Components
+│   │   │   ├── LoginPage.jsx       # User login interface
+│   │   │   ├── RegisterPage.jsx    # User registration interface
+│   │   │   ├── DashboardPage.jsx   # Main dashboard (groups, brackets, knockout)
+│   │   │   ├── DrawSimulatorPage.jsx # Draw simulation interface
 │   │   │   ├── DrawResultPage.jsx  # Display draw results
-│   │   │   └── *.css              # Page-specific styles
-│   │   ├── App.jsx                 # Main app component with routing
-│   │   └── main.jsx               # Application entry point
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
+│   │   │   ├── AuthPages.css       # Shared auth page styles
+│   │   │   ├── DashboardPage.css   # Dashboard styles
+│   │   │   ├── DrawSimulatorPage.css # Simulator styles
+│   │   │   └── DrawResultPage.css  # Results page styles
+│   │   │
+│   │   ├── assets/                 # Static assets
+│   │   │   └── react.svg           # React logo
+│   │   │
+│   │   ├── App.jsx                 # Main app component (routing setup)
+│   │   ├── App.css                 # Global app styles
+│   │   ├── main.jsx                # Application entry point
+│   │   └── index.css               # Global CSS reset/styles
+│   │
+│   ├── index.html                  # HTML template
+│   ├── package.json                # Frontend dependencies
+│   ├── package-lock.json           # Dependency lock file
+│   ├── vite.config.js              # Vite build configuration
+│   ├── eslint.config.js            # ESLint configuration
+│   ├── .gitignore                  # Git ignore rules
+│   └── README.md                   # Frontend documentation
+│
+├── template.html                   # HTML template/reference design
+├── third place possibilities.pdf   # Reference document
+└── README.md                       # Project documentation (this file)
 ```
 
 ## Frontend Setup
