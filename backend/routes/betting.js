@@ -6,9 +6,16 @@ const router = express.Router();
 
 // Helper function to extract country name from team string (removes emoji and extra text)
 function extractCountryName(teamString) {
-  // Remove emoji and extra characters, get just the country name
-  // Examples: "United States 🇺🇸" -> "United States", "Brazil 🇧🇷" -> "Brazil"
-  return teamString.split(/[\u{1F1E6}-\u{1F1FF}]{2}/u)[0].trim();
+  if (!teamString) return '';
+  
+  // Remove all flag emojis (including complex ones like England/Scotland)
+  // This regex handles both simple flag emojis and complex regional indicator sequences
+  let cleaned = teamString
+    .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, '') // Simple flag emojis
+    .replace(/🏴[󠁁-󠁿]*/gu, '') // Regional flags (England, Scotland, Wales)
+    .trim();
+  
+  return cleaned;
 }
 
 // Hardcoded FIFA Rankings (as of November 20, 2025)
@@ -174,6 +181,183 @@ function normalizeTeamName(countryName) {
   return TEAM_NAME_MAP[countryName] || countryName;
 }
 
+// Monte Carlo simulation to calculate group winner probabilities
+function simulateGroupWinner(groupTeams, numSimulations = 10000) {
+  // Get rankings for all teams in the group
+  const teamRankings = groupTeams.map(teamName => {
+    const countryName = extractCountryName(teamName);
+    const ranking = getFIFARanking(countryName);
+    return {
+      name: teamName,
+      countryName: countryName,
+      points: ranking?.points || 1500, // Default to 1500 if no ranking
+      rank: ranking?.rank || null
+    };
+  });
+
+  // Simulate group stage (each team plays 3 matches)
+  const results = {};
+  teamRankings.forEach(team => {
+    results[team.name] = {
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      points: 0,
+      goalDifference: 0
+    };
+  });
+
+  // Run simulations
+  for (let sim = 0; sim < numSimulations; sim++) {
+    // Reset for each simulation
+    const simResults = {};
+    teamRankings.forEach(team => {
+      simResults[team.name] = {
+        points: 0,
+        goalDifference: 0
+      };
+    });
+
+    // Simulate all 6 matches in the group
+    for (let i = 0; i < teamRankings.length; i++) {
+      for (let j = i + 1; j < teamRankings.length; j++) {
+        const team1 = teamRankings[i];
+        const team2 = teamRankings[j];
+        
+        const matchOdds = simulateMatchOdds(team1.points, team2.points, 1, false);
+        if (!matchOdds) continue;
+
+        const random = Math.random();
+        if (random < matchOdds.team1.probability) {
+          // Team 1 wins
+          simResults[team1.name].points += 3;
+          simResults[team1.name].goalDifference += Math.floor(Math.random() * 3) + 1;
+          simResults[team2.name].goalDifference -= Math.floor(Math.random() * 3) + 1;
+        } else if (random < matchOdds.team1.probability + matchOdds.team2.probability) {
+          // Team 2 wins
+          simResults[team2.name].points += 3;
+          simResults[team2.name].goalDifference += Math.floor(Math.random() * 3) + 1;
+          simResults[team1.name].goalDifference -= Math.floor(Math.random() * 3) + 1;
+        } else {
+          // Draw
+          simResults[team1.name].points += 1;
+          simResults[team2.name].points += 1;
+        }
+      }
+    }
+
+    // Determine group winner (highest points, then goal difference)
+    let winner = null;
+    let maxPoints = -1;
+    let maxGD = -1000;
+
+    teamRankings.forEach(team => {
+      if (simResults[team.name].points > maxPoints || 
+          (simResults[team.name].points === maxPoints && simResults[team.name].goalDifference > maxGD)) {
+        maxPoints = simResults[team.name].points;
+        maxGD = simResults[team.name].goalDifference;
+        winner = team.name;
+      }
+    });
+
+    if (winner) {
+      results[winner].wins++;
+    }
+  }
+
+  // Calculate probabilities
+  const groupWinnerProbs = {};
+  teamRankings.forEach(team => {
+    const prob = results[team.name].wins / numSimulations;
+    groupWinnerProbs[team.name] = {
+      probability: prob,
+      odds: probabilityToAmericanOdds(prob),
+      rank: teamRankings.find(t => t.name === team.name)?.rank
+    };
+  });
+
+  return groupWinnerProbs;
+}
+
+// Helper function to convert probability to American odds
+function probabilityToAmericanOdds(probability) {
+  if (probability <= 0 || probability >= 1) return null;
+  if (probability >= 0.5) {
+    return Math.round((probability / (1 - probability)) * -100);
+  } else {
+    return Math.round(((1 - probability) / probability) * 100);
+  }
+}
+
+// Monte Carlo simulation to generate betting odds
+function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isKnockout = false) {
+  if (!team1Points || !team2Points) {
+    return null;
+  }
+
+  // Convert FIFA points to Elo-style rating (normalize to reasonable range)
+  // FIFA points range roughly from ~800 to ~1900, we'll use them directly
+  const rating1 = team1Points;
+  const rating2 = team2Points;
+  
+  // Calculate expected score using Elo formula
+  // Expected score = 1 / (1 + 10^((opponent_rating - own_rating) / 400))
+  const expectedScore1 = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400));
+  const expectedScore2 = 1 / (1 + Math.pow(10, (rating1 - rating2) / 400));
+  
+  // Add some randomness/variance for draws
+  // Draw probability is higher when teams are closer in strength
+  // For knockout stages, draws are less likely (go to extra time/penalties)
+  const ratingDiff = Math.abs(rating1 - rating2);
+  const drawProbability = isKnockout 
+    ? Math.max(0.05, 0.15 - (ratingDiff / 2000)) // 5-15% for knockout (lower)
+    : Math.max(0.15, 0.30 - (ratingDiff / 2000)); // 15-30% for group stage
+  
+  // Adjust win probabilities to account for draws
+  const adjustedWinProb1 = expectedScore1 * (1 - drawProbability);
+  const adjustedWinProb2 = expectedScore2 * (1 - drawProbability);
+  
+  // Run Monte Carlo simulation
+  let team1Wins = 0;
+  let team2Wins = 0;
+  let draws = 0;
+  
+  for (let i = 0; i < numSimulations; i++) {
+    const random = Math.random();
+    
+    if (random < adjustedWinProb1) {
+      team1Wins++;
+    } else if (random < adjustedWinProb1 + adjustedWinProb2) {
+      team2Wins++;
+    } else {
+      draws++;
+    }
+  }
+  
+  // Calculate probabilities from simulation results
+  const probTeam1 = team1Wins / numSimulations;
+  const probTeam2 = team2Wins / numSimulations;
+  const probDraw = draws / numSimulations;
+  
+  return {
+    team1: {
+      name: 'Team 1',
+      probability: probTeam1,
+      odds: probabilityToAmericanOdds(probTeam1)
+    },
+    team2: {
+      name: 'Team 2',
+      probability: probTeam2,
+      odds: probabilityToAmericanOdds(probTeam2)
+    },
+    draw: {
+      name: 'Draw',
+      probability: probDraw,
+      odds: probabilityToAmericanOdds(probDraw)
+    }
+  };
+}
+
 // Soccer sport keys in The Odds API
 const SOCCER_SPORT_KEYS = [
   'soccer_fifa_world_cup',           // FIFA World Cup
@@ -188,6 +372,35 @@ const SOCCER_SPORT_KEYS = [
   'soccer_usa_mls',                  // MLS
   'soccer_mexico_ligamx',            // Liga MX
 ];
+
+// GET group winner probabilities
+router.get('/group-winner', async (req, res) => {
+  try {
+    const { groupName, teams } = req.query;
+
+    if (!teams) {
+      return res.status(400).json({ message: 'Teams array is required' });
+    }
+
+    const teamArray = JSON.parse(teams);
+    if (!Array.isArray(teamArray) || teamArray.length !== 4) {
+      return res.status(400).json({ message: 'Must provide exactly 4 teams' });
+    }
+
+    const groupWinnerProbs = simulateGroupWinner(teamArray);
+    
+    return res.json({
+      groupName: groupName,
+      probabilities: groupWinnerProbs
+    });
+  } catch (error) {
+    console.error('Error calculating group winner probabilities:', error);
+    res.status(500).json({ 
+      message: 'Failed to calculate group winner probabilities', 
+      error: error.message 
+    });
+  }
+});
 
 // GET betting odds for a matchup (API DISABLED - returns placeholder data with FIFA rankings)
 router.get('/odds', async (req, res) => {
@@ -210,18 +423,58 @@ router.get('/odds', async (req, res) => {
 
     console.log(`FIFA Rankings: ${country1} - ${ranking1?.rank || 'N/A'}, ${country2} - ${ranking2?.rank || 'N/A'}`);
 
-    // Return placeholder data (API calls disabled to prevent API key usage)
+    // Determine if this is a knockout stage match
+    const isKnockout = type === 'matchup' || type === 'knockout';
+
+    // Generate Monte Carlo simulation odds if we have rankings
+    let simulatedOdds = null;
+    let bookmakers = [];
+    
+    if (ranking1 && ranking2 && ranking1.points && ranking2.points) {
+      simulatedOdds = simulateMatchOdds(ranking1.points, ranking2.points, 10000, isKnockout);
+      
+      if (simulatedOdds) {
+        // Single bookmaker - Monte Carlo Sportsbook
+        bookmakers = [{
+          title: 'Monte Carlo Sportsbook',
+          name: 'Monte Carlo Sportsbook',
+          markets: [{
+            key: 'h2h',
+            outcomes: [
+              {
+                name: country1,
+                price: simulatedOdds.team1.odds,
+                probability: simulatedOdds.team1.probability
+              },
+              {
+                name: 'Draw',
+                price: simulatedOdds.draw.odds,
+                probability: simulatedOdds.draw.probability
+              },
+              {
+                name: country2,
+                price: simulatedOdds.team2.odds,
+                probability: simulatedOdds.team2.probability
+              }
+            ]
+          }]
+        }];
+      }
+    }
+
+    // Return data with Monte Carlo simulated odds
     return res.json({
       team1: country1,
       team2: country2,
-      odds: [], // Empty odds array - placeholder
+      odds: bookmakers,
       event: null,
       rankings: {
         team1: ranking1,
         team2: ranking2,
       },
-      message: 'Betting odds are temporarily unavailable. Please check back later.',
-      mock: true,
+      simulatedOdds: simulatedOdds, // Include raw simulation data
+      message: bookmakers.length > 0 ? null : 'Unable to generate odds - missing team rankings',
+      mock: false,
     });
 
     /* DISABLED - API QUOTA REACHED

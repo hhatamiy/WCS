@@ -237,11 +237,23 @@
   transform: translateX(4px);
 }
 
+.outcome-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .outcome-name {
   font-weight: 700;
   color: #1a1a2e;
   font-size: 1.05rem;
   letter-spacing: -0.2px;
+}
+
+.outcome-probability {
+  font-size: 0.85rem;
+  color: #667eea;
+  font-weight: 600;
 }
 
 .outcome-price {
@@ -384,10 +396,22 @@
   border-color: #667eea;
 }
 
+.matchup-outcome-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .outcome-label {
   font-weight: 600;
   color: #1a1a2e;
   font-size: 0.95rem;
+}
+
+.matchup-probability {
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 600;
 }
 
 .outcome-odds {

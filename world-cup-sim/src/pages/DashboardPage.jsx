@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateRoundOf32Matchups } from '../utils/knockoutAlgorithm';
+import api from '../api/api';
 import './DashboardPage.css';
 
 // Actual FIFA World Cup 2026 Groups (as drawn)
@@ -115,6 +116,36 @@ function DashboardPage() {
   const [champion, setChampion] = useState(null);
   const [draggedTeam, setDraggedTeam] = useState(null);
   const [currentView, setCurrentView] = useState('groups'); // 'groups', 'third-place', 'bracket'
+  const [groupWinnerProbs, setGroupWinnerProbs] = useState({});
+
+  // Fetch group winner probabilities when groups are loaded
+  useEffect(() => {
+    const fetchGroupWinnerProbs = async () => {
+      const probs = {};
+      const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+      
+      for (const groupName of groupNames) {
+        if (groups[groupName] && groups[groupName].teams.length === 4) {
+          try {
+            const teamNames = groups[groupName].teams.map(team => team.name);
+            const response = await api.get('/api/betting/group-winner', {
+              params: {
+                groupName: groupName,
+                teams: JSON.stringify(teamNames),
+              },
+            });
+            probs[groupName] = response.data.probabilities;
+          } catch (error) {
+            console.error(`Error fetching group winner probabilities for Group ${groupName}:`, error);
+          }
+        }
+      }
+      
+      setGroupWinnerProbs(probs);
+    };
+
+    fetchGroupWinnerProbs();
+  }, [groups]);
 
   const handleLogout = () => {
     localStorage.removeItem('jwt');
@@ -425,7 +456,7 @@ function DashboardPage() {
         {currentView === 'groups' && (
           <div className="groups-section">
             <h2>Group Stage</h2>
-            <p className="instruction-text">Drag and drop teams to swap positions</p>
+            <p className="instruction-text">Drag and drop teams to swap positions. Percentages are each team's probability of winning the group.</p>
             
             <div className="groups-grid">
               {Object.keys(groups).map((groupName) => (
@@ -437,21 +468,30 @@ function DashboardPage() {
                 >
                   <h3>Group {groupName}</h3>
                   <div className="group-teams">
-                    {groups[groupName].teams.map((team, index) => (
-                      <div
-                        key={index}
-                        className={`group-team pot-${team.pot}`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, groupName, index)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, groupName, index)}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="position-number">{index + 1}.</span>
-                        <span className="team-name">{team.name}</span>
-                        <span className="pot-badge">Pot {team.pot}</span>
-                      </div>
-                    ))}
+                    {groups[groupName].teams.map((team, index) => {
+                      const teamProb = groupWinnerProbs[groupName]?.[team.name];
+                      return (
+                        <div
+                          key={index}
+                          className={`group-team pot-${team.pot}`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, groupName, index)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, groupName, index)}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="position-number">{index + 1}.</span>
+                          <span className="team-name">{team.name}</span>
+                          {teamProb ? (
+                            <span className="group-winner-prob">
+                              {(teamProb.probability * 100).toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="pot-badge">Pot {team.pot}</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

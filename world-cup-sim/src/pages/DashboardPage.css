@@ -232,6 +232,16 @@
   font-weight: 600;
 }
 
+.group-winner-prob {
+  font-size: 13px;
+  padding: 4px 10px;
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 6px;
+  font-weight: 700;
+  color: #00c6ff;
+  border: 1px solid rgba(102, 126, 234, 0.5);
+}
+
 /* THIRD PLACE RANKING STYLES */
 .third-place-section {
   max-width: 800px;

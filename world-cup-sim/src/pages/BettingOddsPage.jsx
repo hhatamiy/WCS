@@ -5,7 +5,15 @@ import './BettingOddsPage.css';
 
 // Helper function to extract country name (remove emoji)
 function extractCountryName(teamString) {
-  return teamString.split(/[\u{1F1E6}-\u{1F1FF}]{2}/u)[0].trim();
+  if (!teamString) return '';
+  
+  // Remove all flag emojis (including complex ones like England/Scotland)
+  let cleaned = teamString
+    .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, '') // Simple flag emojis
+    .replace(/🏴[󠁁-󠁿]*/gu, '') // Regional flags (England, Scotland, Wales)
+    .trim();
+  
+  return cleaned;
 }
 
 // Helper function to format rank with proper ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
@@ -208,13 +216,20 @@ function BettingOddsPage() {
                           <div className="matchup-outcomes">
                             {bookmaker.markets[0].outcomes.map((outcome, oIndex) => (
                               <div key={oIndex} className="matchup-outcome">
-                                <span className="outcome-label">
-                                  {outcome.name === extractCountryName(matchup.team1) 
-                                    ? extractCountryName(matchup.team1)
-                                    : outcome.name === extractCountryName(matchup.team2)
-                                    ? extractCountryName(matchup.team2)
-                                    : outcome.name}
-                                </span>
+                                <div className="matchup-outcome-left">
+                                  <span className="outcome-label">
+                                    {outcome.name === extractCountryName(matchup.team1) 
+                                      ? extractCountryName(matchup.team1)
+                                      : outcome.name === extractCountryName(matchup.team2)
+                                      ? extractCountryName(matchup.team2)
+                                      : outcome.name}
+                                  </span>
+                                  {outcome.probability !== undefined && (
+                                    <span className="matchup-probability">
+                                      {(outcome.probability * 100).toFixed(1)}%
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="outcome-odds">
                                   {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
                                 </span>
@@ -258,13 +273,18 @@ function BettingOddsPage() {
           <div className="team-display team1">
             <h2 className="team-name-large">{extractCountryName(odds?.team1 || team1)}</h2>
             <p className="team-name-full">{odds?.team1 || team1}</p>
-            {odds?.rankings?.team1 && (
+            {odds?.rankings?.team1?.rank ? (
               <div className="fifa-ranking">
                 <span className="ranking-label">FIFA Rank:</span>
                 <span className="ranking-value">#{formatRank(odds.rankings.team1.rank)}</span>
                 {odds.rankings.team1.points && (
                   <span className="ranking-points">({odds.rankings.team1.points} pts)</span>
                 )}
+              </div>
+            ) : (
+              <div className="fifa-ranking">
+                <span className="ranking-label">FIFA Rank:</span>
+                <span className="ranking-value">N/A</span>
               </div>
             )}
           </div>
@@ -274,13 +294,18 @@ function BettingOddsPage() {
           <div className="team-display team2">
             <h2 className="team-name-large">{extractCountryName(odds?.team2 || team2)}</h2>
             <p className="team-name-full">{odds?.team2 || team2}</p>
-            {odds?.rankings?.team2 && (
+            {odds?.rankings?.team2?.rank ? (
               <div className="fifa-ranking">
                 <span className="ranking-label">FIFA Rank:</span>
                 <span className="ranking-value">#{formatRank(odds.rankings.team2.rank)}</span>
                 {odds.rankings.team2.points && (
                   <span className="ranking-points">({odds.rankings.team2.points} pts)</span>
                 )}
+              </div>
+            ) : (
+              <div className="fifa-ranking">
+                <span className="ranking-label">FIFA Rank:</span>
+                <span className="ranking-value">N/A</span>
               </div>
             )}
           </div>
@@ -317,7 +342,14 @@ function BettingOddsPage() {
                             <div className="outcomes">
                               {market.outcomes.map((outcome, outcomeIndex) => (
                                 <div key={outcomeIndex} className="outcome">
-                                  <span className="outcome-name">{outcome.name}</span>
+                                  <div className="outcome-left">
+                                    <span className="outcome-name">{outcome.name}</span>
+                                    {outcome.probability !== undefined && (
+                                      <span className="outcome-probability">
+                                        {(outcome.probability * 100).toFixed(1)}%
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="outcome-price">
                                     {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
                                   </span>
