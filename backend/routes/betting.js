@@ -189,7 +189,7 @@ const SOCCER_SPORT_KEYS = [
   'soccer_mexico_ligamx',            // Liga MX
 ];
 
-// GET betting odds for a matchup using The Odds API
+// GET betting odds for a matchup (API DISABLED - returns placeholder data with FIFA rankings)
 router.get('/odds', async (req, res) => {
   try {
     const { team1, team2, type } = req.query; // type: 'group' or 'matchup'
@@ -198,29 +198,19 @@ router.get('/odds', async (req, res) => {
       return res.status(400).json({ message: 'Both team1 and team2 are required' });
     }
 
-    const apiKey = process.env.THE_ODDS_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ message: 'THE_ODDS_API_KEY not configured in environment' });
-    }
-
     // Extract country names from team strings
     const country1 = extractCountryName(team1);
     const country2 = extractCountryName(team2);
-    
-    // Normalize team names for API
-    const normalizedTeam1 = normalizeTeamName(country1);
-    const normalizedTeam2 = normalizeTeamName(country2);
 
-    console.log(`Attempting to fetch odds for ${country1} vs ${country2} using The Odds API`);
+    console.log(`Getting odds for ${country1} vs ${country2} (API disabled - placeholder data)`);
 
-    // DISABLED: API quota reached - using placeholder data
     // Get FIFA rankings for both teams (hardcoded, no API)
     const ranking1 = getFIFARanking(country1);
     const ranking2 = getFIFARanking(country2);
 
     console.log(`FIFA Rankings: ${country1} - ${ranking1?.rank || 'N/A'}, ${country2} - ${ranking2?.rank || 'N/A'}`);
 
-    // Return placeholder data instead of making API calls
+    // Return placeholder data (API calls disabled to prevent API key usage)
     return res.json({
       team1: country1,
       team2: country2,
