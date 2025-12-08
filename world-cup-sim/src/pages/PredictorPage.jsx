@@ -764,7 +764,7 @@ function PredictorPage() {
                                 <div
                                   className={`team ${!matchup.team1 ? 'empty' : ''} ${
                                     isBracketTeamClickable('right', roundIndex, matchupIndex) ? 'clickable' : ''
-                                  } ${matchup.winner === matchup.team1 ? 'winner' : ''}`}
+                                  } ${matchup.winner === matchup.team1 ? 'winner' : 'loser'} ${matchup.team2 ? 'set' : 'wait'}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (isBracketTeamClickable('right', roundIndex, matchupIndex)) {
@@ -778,7 +778,7 @@ function PredictorPage() {
                                 <div
                                   className={`team ${!matchup.team2 ? 'empty' : ''} ${
                                     isBracketTeamClickable('right', roundIndex, matchupIndex) ? 'clickable' : ''
-                                  } ${matchup.winner === matchup.team2 ? 'winner' : ''}`}
+                                  } ${matchup.winner === matchup.team2 ? 'winner' : 'loser'} ${matchup.team1 ? 'set' : 'wait'}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (isBracketTeamClickable('right', roundIndex, matchupIndex)) {

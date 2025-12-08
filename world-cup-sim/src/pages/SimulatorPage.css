@@ -496,14 +496,14 @@
 
 .champion-announcement {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 25px;
   animation: fadeIn 0.5s ease-in;
 }
 
 .champion-effect {
   background: linear-gradient(135deg, #ffd700, #ffed4e);
-  padding: 30px;
-  border-radius: 20px;
+  padding: 18px;
+  border-radius: 12px;
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
   animation: championGlow 2s ease-in-out infinite;
   display: inline-block;
@@ -511,14 +511,14 @@
 }
 
 .champion-effect h2 {
-  margin: 0 0 15px 0;
-  font-size: 36px;
+  margin: 0 0 10px 0;
+  font-size: 22px;
   color: #0a1a2a;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .champion-name {
-  font-size: 48px;
+  font-size: 28px;
   font-weight: 700;
   color: #0a1a2a;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -549,13 +549,13 @@
   justify-content: space-between;
   align-items: center;
   position: relative;
-  padding: 40px 0;
+  padding: 25px 0;
 }
 
 .bracket-half {
   display: flex;
   flex-direction: row;
-  gap: 40px;
+  gap: 25px;
   flex: 1;
   align-items: center;
 }
@@ -573,8 +573,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 250px;
-  margin: 0 40px;
+  min-width: 180px;
+  margin: 0 25px;
   position: relative;
   z-index: 10;
   flex-shrink: 0;
@@ -590,12 +590,12 @@
 
 .round-label {
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: 20px;
-  padding: 8px 12px;
+  margin-bottom: 12px;
+  padding: 6px 10px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
   backdrop-filter: blur(10px);
   white-space: nowrap;
 }
@@ -604,36 +604,36 @@
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  height: 1100px;
+  height: 750px;
 }
 
 .round-matchups-2 {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  height: 1100px;
-  gap: 50px;
+  height: 750px;
+  gap: 30px;
 }
 
 .round-matchups-3 {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  height: 1100px;
-  gap: 200px;
+  height: 750px;
+  gap: 120px;
 }
 
 .round-matchups-4 {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  height: 1100px;
+  height: 750px;
 }
 
 .bracket-left .round-4 .round-matchups,
 .bracket-right .round-4 .round-matchups {
   justify-content: center;
-  min-height: 200px;
+  min-height: 140px;
 }
 
 .matchup-wrapper {
@@ -646,9 +646,9 @@
   display: flex;
   flex-direction: column;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px;
-  min-width: 140px;
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 100px;
   transition: background 0.2s;
   position: relative;
   z-index: 5;
@@ -659,21 +659,21 @@
 }
 
 .final-matchup {
-  min-width: 220px;
+  min-width: 150px;
   background: rgba(255, 255, 255, 0.12);
   border: 2px solid rgba(255, 215, 0, 0.3);
 }
 
 .team {
-  padding: 5px;
+  padding: 4px;
   background: rgba(255, 255, 0, 0.2);
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
   text-align: center;
   transition: all 0.2s;
   border: 2px solid transparent;
-  min-height: 40px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -713,7 +713,7 @@
   color: rgba(255, 255, 255, 0.4);
   border-color: rgba(255, 255, 255, 0.1);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 13px;
   animation: championPulse 1.5s ease-in-out infinite;
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
 }
@@ -723,7 +723,7 @@
   color: #0a1a2a;
   border-color: #ffd700;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 13px;
   animation: championPulse 1.5s ease-in-out infinite;
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
 }
@@ -739,7 +739,7 @@
 
 .match-score {
   text-align: center;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   color: #00c6ff;
   padding: 2px 0;
@@ -747,7 +747,7 @@
 }
 
 .penalty-notation {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #ffd700;
   display: inline;
@@ -755,7 +755,7 @@
 
 .vs {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.5);
   margin: 2px 0;
   font-weight: 600;
@@ -778,17 +778,17 @@
 }
 
 .champion-box {
-  margin-top: 20px;
-  padding: 15px;
+  margin-top: 15px;
+  padding: 10px;
   background: linear-gradient(135deg, #ffd700, #ffed4e);
-  border-radius: 12px;
+  border-radius: 8px;
   text-align: center;
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
   animation: championGlow 2s ease-in-out infinite;
 }
 
 .champion-team {
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 700;
   color: #0a1a2a;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
