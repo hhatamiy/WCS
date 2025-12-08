@@ -109,6 +109,96 @@ function initializeGroups() {
   return groups;
 }
 
+// Helper function to extract country name (remove emoji)
+function extractCountryName(teamString) {
+  if (!teamString) return '';
+  let cleaned = teamString
+    .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, '')
+    .replace(/🏴[󠁁-󠁿]*/gu, '')
+    .trim();
+  return cleaned;
+}
+
+// Helper function to get full country name with flag (for final match)
+function getFullCountryName(teamString) {
+  if (!teamString) return '';
+  // Return as-is (already includes flag emoji)
+  return teamString;
+}
+
+// Calculate the top position for a matchup based on its round and index
+// Each matchup should be positioned at the average Y position of its two parent matchups
+function calculateMatchupTop(roundIndex, matchupIndex, totalMatchupsInRound, containerHeight = 1200) {
+  if (roundIndex === 0) {
+    // Round of 32: evenly space all matchups from top with more padding
+    // Use a larger container height and add padding at top
+    const topPadding = 20;
+    const availableHeight = containerHeight - (topPadding * 2);
+    const spacing = availableHeight / (totalMatchupsInRound - 1);
+    return topPadding + (spacing * matchupIndex);
+  } else {
+    // For subsequent rounds, calculate based on parent matchups from previous round
+    const parentRoundMatchups = totalMatchupsInRound * 2; // Previous round has 2x matchups
+    const topPadding = 20;
+    const availableHeight = containerHeight - (topPadding * 2);
+    const parentSpacing = availableHeight / (parentRoundMatchups - 1);
+    
+    // This matchup comes from parent matchups at indices (2*matchupIndex) and (2*matchupIndex + 1)
+    const parent1Top = topPadding + (parentSpacing * (2 * matchupIndex));
+    const parent2Top = topPadding + (parentSpacing * (2 * matchupIndex + 1));
+    
+    // Return the average - this positions the matchup between its two parents
+    return (parent1Top + parent2Top) / 2;
+  }
+}
+
+// Helper function to get 3-letter country code for UI display (keeps flag emoji)
+function getCountryCode(teamString) {
+  if (!teamString) return '';
+  
+  // Extract flag emoji (country flags or special flags like Scotland)
+  const flagMatch = teamString.match(/[\u{1F1E6}-\u{1F1FF}]{2}|🏴[󠁁-󠁿]*/gu);
+  const flag = flagMatch ? flagMatch[0] : '';
+  
+  // Extract country name
+  const countryName = extractCountryName(teamString);
+  
+  // Special cases for multi-word country names
+  const specialCases = {
+    'United States': 'USA',
+    'DR Congo': 'DRC',
+    'New Zealand': 'NZL',
+    'South Africa': 'RSA',
+    'South Korea': 'KOR',
+    'Saudi Arabia': 'KSA',
+    'Ivory Coast': 'CIV',
+    'Cape Verde': 'CPV'
+  };
+  
+  // Check if it's a special case
+  if (specialCases[countryName]) {
+    return flag ? `${flag} ${specialCases[countryName]}` : specialCases[countryName];
+  }
+  
+  // For other multi-word names, use first letter of each word (up to 3 words)
+  const words = countryName.split(/\s+/);
+  let code;
+  if (words.length > 1) {
+    // Multi-word: use first letter of each word
+    code = words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+    // Pad to 3 characters if needed
+    if (code.length < 3 && words[0].length > 1) {
+      code = (code + words[0].substring(1, 4 - code.length)).toUpperCase().substring(0, 3);
+    }
+  } else {
+    // Single word: use first 3 letters
+    code = countryName.substring(0, 3).toUpperCase();
+  }
+  
+  // Return flag + code
+  return flag ? `${flag} ${code}` : code;
+}
+
 function PredictorPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -721,8 +811,14 @@ function PredictorPage() {
                         {roundIndex === 3 && 'Semifinals'}
                       </div>
                       <div className={`round-matchups-${roundIndex + 1}`}>
-                        {round.map((matchup, matchupIndex) => (
-                          <div key={matchupIndex} className="matchup-wrapper">
+                        {round.map((matchup, matchupIndex) => {
+                          const topPosition = calculateMatchupTop(roundIndex, matchupIndex, round.length);
+                          return (
+                          <div 
+                            key={matchupIndex} 
+                            className="matchup-wrapper"
+                            style={{ position: 'absolute', top: `${topPosition}px` }}
+                          >
                             <div 
                               className={`matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
                               onClick={() => {
@@ -743,7 +839,7 @@ function PredictorPage() {
                                   }
                                 }}
                               >
-                                {matchup.team1 || 'TBD'}
+                                {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                               </div>
                               <div className="vs">vs</div>
                               <div
@@ -757,11 +853,12 @@ function PredictorPage() {
                                   }
                                 }}
                               >
-                                {matchup.team2 || 'TBD'}
+                                {matchup.team2 ? getCountryCode(matchup.team2) : 'TBD'}
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -795,7 +892,7 @@ function PredictorPage() {
                           }
                         }}
                       >
-                        {matchup.team1 || 'TBD'}
+                        {matchup.team1 ? getFullCountryName(matchup.team1) : 'TBD'}
                       </div>
                       <div className="vs">vs</div>
                       <div
@@ -811,12 +908,12 @@ function PredictorPage() {
                           }
                         }}
                       >
-                        {matchup.team2 || 'TBD'}
+                        {matchup.team2 ? getFullCountryName(matchup.team2) : 'TBD'}
                       </div>
                     </div>
                     {matchup.winner && (
                       <div className="champion-box">
-                        <div className="champion-team">{matchup.winner}</div>
+                        <div className="champion-team">{getFullCountryName(matchup.winner)}</div>
                       </div>
                     )}
                   </div>
@@ -848,7 +945,7 @@ function PredictorPage() {
                               }
                             }}
                           >
-                            {matchup.team1 || 'TBD'}
+                            {matchup.team1 ? getFullCountryName(matchup.team1) : 'TBD'}
                           </div>
                           <div className="vs">vs</div>
                           <div
@@ -862,7 +959,7 @@ function PredictorPage() {
                               }
                             }}
                           >
-                            {matchup.team2 || 'TBD'}
+                            {matchup.team2 ? getFullCountryName(matchup.team2) : 'TBD'}
                           </div>
                         </div>
                       </div>
@@ -886,8 +983,13 @@ function PredictorPage() {
                       <div className={`round-matchups-${roundIndex + 1}`}>
                         {[...round].reverse().map((matchup, reversedIndex) => {
                           const matchupIndex = round.length - 1 - reversedIndex;
+                          const topPosition = calculateMatchupTop(roundIndex, matchupIndex, round.length);
                           return (
-                            <div key={matchupIndex} className="matchup-wrapper">
+                            <div 
+                              key={matchupIndex} 
+                              className="matchup-wrapper"
+                              style={{ position: 'absolute', top: `${topPosition}px` }}
+                            >
                               <div 
                                 className={`matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
                                 onClick={() => {
@@ -908,7 +1010,7 @@ function PredictorPage() {
                                     }
                                   }}
                                 >
-                                  {matchup.team1 || 'TBD'}
+                                  {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                                 </div>
                                 <div className="vs">vs</div>
                                 <div
@@ -922,7 +1024,7 @@ function PredictorPage() {
                                     }
                                   }}
                                 >
-                                  {matchup.team2 || 'TBD'}
+                                  {matchup.team2 ? getCountryCode(matchup.team2) : 'TBD'}
                                 </div>
                               </div>
                             </div>

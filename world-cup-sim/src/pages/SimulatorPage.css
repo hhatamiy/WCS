@@ -202,6 +202,9 @@
   flex: 1;
   font-size: 16px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pot-badge {
@@ -270,6 +273,9 @@
 .team-cell .team-name {
   font-size: 13px;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .points-cell {
@@ -298,6 +304,9 @@
   margin-bottom: 5px;
   font-size: 11px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* THIRD PLACE RANKING STYLES */
@@ -557,7 +566,7 @@
   flex-direction: row;
   gap: 25px;
   flex: 1;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .bracket-left {
@@ -586,6 +595,7 @@
   flex-direction: column;
   position: relative;
   align-items: center;
+  align-self: flex-start;
 }
 
 .round-label {
@@ -600,46 +610,26 @@
   white-space: nowrap;
 }
 
-.round-matchups-1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  height: 750px;
-}
-
-.round-matchups-2 {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  height: 750px;
-  gap: 30px;
-}
-
-.round-matchups-3 {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  height: 750px;
-  gap: 120px;
-}
-
+.round-matchups-1,
+.round-matchups-2,
+.round-matchups-3,
 .round-matchups-4 {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  height: 750px;
+  position: relative;
+  min-height: 1200px;
+  width: 100%;
 }
 
 .bracket-left .round-4 .round-matchups,
 .bracket-right .round-4 .round-matchups {
-  justify-content: center;
-  min-height: 140px;
+  min-height: 750px;
 }
 
 .matchup-wrapper {
-  position: relative;
+  position: absolute;
   display: flex;
   align-items: center;
+  width: 100%;
+  left: 0;
 }
 
 .matchup {
@@ -659,9 +649,16 @@
 }
 
 .final-matchup {
-  min-width: 150px;
+  min-width: 180px;
   background: rgba(255, 255, 255, 0.12);
   border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.final-matchup .team {
+  white-space: normal;
+  word-wrap: break-word;
+  padding: 6px;
+  min-height: auto;
 }
 
 .team {
@@ -677,7 +674,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  word-break: break-word;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .team.empty {
@@ -775,6 +773,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  position: relative !important;
 }
 
 .third-place-playoff-wrapper {
@@ -792,6 +791,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  position: relative !important;
 }
 
 .third-place-matchup {

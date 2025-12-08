@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateRoundOf32Matchups } from '../utils/knockoutAlgorithm';
@@ -119,31 +119,131 @@ function extractCountryName(teamString) {
   return cleaned;
 }
 
+// Helper function to get full country name with flag (for final match)
+function getFullCountryName(teamString) {
+  if (!teamString) return '';
+  // Return as-is (already includes flag emoji)
+  return teamString;
+}
+
+// Calculate the top position for a matchup based on its round and index
+// Each matchup should be positioned at the average Y position of its two parent matchups
+function calculateMatchupTop(roundIndex, matchupIndex, totalMatchupsInRound, containerHeight = 1200) {
+  if (roundIndex === 0) {
+    // Round of 32: evenly space all matchups from top with more padding
+    // Use a larger container height and add padding at top
+    const topPadding = 20;
+    const availableHeight = containerHeight - (topPadding * 2);
+    const spacing = availableHeight / (totalMatchupsInRound - 1);
+    return topPadding + (spacing * matchupIndex);
+  } else {
+    // For subsequent rounds, calculate based on parent matchups from previous round
+    const parentRoundMatchups = totalMatchupsInRound * 2; // Previous round has 2x matchups
+    const topPadding = 20;
+    const availableHeight = containerHeight - (topPadding * 2);
+    const parentSpacing = availableHeight / (parentRoundMatchups - 1);
+    
+    // This matchup comes from parent matchups at indices (2*matchupIndex) and (2*matchupIndex + 1)
+    const parent1Top = topPadding + (parentSpacing * (2 * matchupIndex));
+    const parent2Top = topPadding + (parentSpacing * (2 * matchupIndex + 1));
+    
+    // Return the average - this positions the matchup between its two parents
+    return (parent1Top + parent2Top) / 2;
+  }
+}
+
+// Helper function to get 3-letter country code for UI display (keeps flag emoji)
+function getCountryCode(teamString) {
+  if (!teamString) return '';
+  
+  // Extract flag emoji (country flags or special flags like Scotland)
+  const flagMatch = teamString.match(/[\u{1F1E6}-\u{1F1FF}]{2}|🏴[󠁁-󠁿]*/gu);
+  const flag = flagMatch ? flagMatch[0] : '';
+  
+  // Extract country name
+  const countryName = extractCountryName(teamString);
+  
+  // Special cases for multi-word country names
+  const specialCases = {
+    'United States': 'USA',
+    'DR Congo': 'DRC',
+    'New Zealand': 'NZL',
+    'South Africa': 'RSA',
+    'South Korea': 'KOR',
+    'Saudi Arabia': 'KSA',
+    'Ivory Coast': 'CIV',
+    'Cape Verde': 'CPV'
+  };
+  
+  // Check if it's a special case
+  if (specialCases[countryName]) {
+    return flag ? `${flag} ${specialCases[countryName]}` : specialCases[countryName];
+  }
+  
+  // For other multi-word names, use first letter of each word (up to 3 words)
+  const words = countryName.split(/\s+/);
+  let code;
+  if (words.length > 1) {
+    // Multi-word: use first letter of each word
+    code = words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+    // Pad to 3 characters if needed
+    if (code.length < 3 && words[0].length > 1) {
+      code = (code + words[0].substring(1, 4 - code.length)).toUpperCase().substring(0, 3);
+    }
+  } else {
+    // Single word: use first 3 letters
+    code = countryName.substring(0, 3).toUpperCase();
+  }
+  
+  // Return flag + code
+  return flag ? `${flag} ${code}` : code;
+}
+
 // Generate a realistic number of goals with weighted probability
-// Most games have 1-3 goals, but occasionally we see 4-7 goal thrillers
+// Based on World Cup statistics: average ~2.7 goals/match, 70-80% have 0-3 total goals
+// 4+ goals in 20-30%, 5+ goals rare, 6+ very rare, 7+ extremely rare, 10+ <0.1%
 function generateGoals(isWinner = false, probStrength = 0.5) {
   const rand = Math.random();
   
   if (isWinner) {
-    // Winner's goals - weighted toward 1-3, but can go higher
-    // Stronger teams (higher probStrength) more likely to score more
-    const strengthBonus = (probStrength - 0.5) * 2; // -1 to 1 range
+    // Winner's goals - mostly 1-2 goals, occasionally 3, rarely 4+
+    // Stronger teams (higher probStrength) slightly more likely to score more
+    const strengthBonus = (probStrength - 0.5) * 0.1; // Small bonus for stronger teams
     
-    if (rand < 0.35) return 1;
-    if (rand < 0.60) return 2;
-    if (rand < 0.78) return 3;
-    if (rand < 0.88 + strengthBonus * 0.05) return 4;
-    if (rand < 0.95 + strengthBonus * 0.03) return 5;
-    if (rand < 0.98 + strengthBonus * 0.01) return 6;
-    return 7; // Rare, but happens (like Germany 7-1 Brazil)
+    if (rand < 0.45) return 1;  // 45% chance of 1 goal
+    if (rand < 0.80) return 2;  // 35% chance of 2 goals (most common)
+    if (rand < 0.95) return 3;  // 15% chance of 3 goals
+    if (rand < 0.99 + strengthBonus) return 4;  // 4% chance of 4 goals
+    if (rand < 0.999) return 5;  // 0.9% chance of 5 goals (very rare)
+    return 6; // 0.1% chance of 6+ goals (extremely rare, like Germany 7-1 Brazil)
   } else {
-    // Loser's goals - usually 0-2, occasionally more
-    if (rand < 0.40) return 0;
-    if (rand < 0.70) return 1;
-    if (rand < 0.88) return 2;
-    if (rand < 0.95) return 3;
-    if (rand < 0.98) return 4;
-    return 5; // Very rare high-scoring losses
+    // Loser's goals - mostly 0-1 goals, occasionally 2, rarely 3+
+    if (rand < 0.50) return 0;  // 50% chance of 0 goals (clean sheet)
+    if (rand < 0.85) return 1;  // 35% chance of 1 goal
+    if (rand < 0.97) return 2;  // 12% chance of 2 goals
+    if (rand < 0.995) return 3; // 2.5% chance of 3 goals (rare)
+    return 4; // 0.5% chance of 4+ goals (very rare)
+  }
+}
+
+// Cap total goals to prevent unrealistic high-scoring matches
+// Based on World Cup stats: 7+ total goals should be very rare (<1%), 8+ extremely rare
+function capTotalGoals(goals1, goals2, maxTotal = 7) {
+  const total = goals1 + goals2;
+  if (total <= maxTotal) {
+    return { goals1, goals2 };
+  }
+  
+  // If total exceeds max, proportionally reduce both scores while maintaining winner
+  const ratio = maxTotal / total;
+  const newGoals1 = Math.max(1, Math.round(goals1 * ratio));
+  const newGoals2 = Math.max(0, Math.round(goals2 * ratio));
+  
+  // Ensure winner still wins
+  if (goals1 > goals2) {
+    return { goals1: Math.max(newGoals1, newGoals2 + 1), goals2: newGoals2 };
+  } else {
+    return { goals1: newGoals1, goals2: Math.max(newGoals2, newGoals1 + 1) };
   }
 }
 
@@ -164,15 +264,19 @@ function generateScore(team1Prob, team2Prob, drawProb, isKnockout = false) {
       const goals1 = generateGoals(true, team1Prob);
       const goals2 = generateGoals(false, team2Prob);
       // Ensure team1 actually wins
-      const actualGoals2 = goals2 >= goals1 ? goals1 - 1 : goals2;
-      return { team1: goals1, team2: Math.max(0, actualGoals2), isDraw: false, isPenalties: false };
+      let actualGoals2 = goals2 >= goals1 ? goals1 - 1 : goals2;
+      // Cap total goals to prevent unrealistic scores
+      const capped = capTotalGoals(goals1, actualGoals2, 7);
+      return { team1: capped.goals1, team2: Math.max(0, capped.goals2), isDraw: false, isPenalties: false };
     } else if (random < adjustedTeam1Prob + adjustedTeam2Prob) {
       // Team 2 wins in regular/extra time
       const goals2 = generateGoals(true, team2Prob);
       const goals1 = generateGoals(false, team1Prob);
       // Ensure team2 actually wins
-      const actualGoals1 = goals1 >= goals2 ? goals2 - 1 : goals1;
-      return { team1: Math.max(0, actualGoals1), team2: goals2, isDraw: false, isPenalties: false };
+      let actualGoals1 = goals1 >= goals2 ? goals2 - 1 : goals1;
+      // Cap total goals to prevent unrealistic scores
+      const capped = capTotalGoals(actualGoals1, goals2, 7);
+      return { team1: Math.max(0, capped.goals1), team2: capped.goals2, isDraw: false, isPenalties: false };
     } else {
       // Goes to penalties (draw after extra time)
       // Generate a realistic draw score (0-0, 1-1, 2-2, rarely 3-3)
@@ -241,25 +345,30 @@ function generateScore(team1Prob, team2Prob, drawProb, isKnockout = false) {
       const goals1 = generateGoals(true, team1Prob);
       const goals2 = generateGoals(false, team2Prob);
       // Ensure team1 actually wins
-      const actualGoals2 = goals2 >= goals1 ? goals1 - 1 : goals2;
-      return { team1: goals1, team2: Math.max(0, actualGoals2), isDraw: false };
+      let actualGoals2 = goals2 >= goals1 ? goals1 - 1 : goals2;
+      // Cap total goals to prevent unrealistic scores
+      const capped = capTotalGoals(goals1, actualGoals2, 7);
+      return { team1: capped.goals1, team2: Math.max(0, capped.goals2), isDraw: false };
     } else if (random < team1Prob + team2Prob) {
       // Team 2 wins
       const goals2 = generateGoals(true, team2Prob);
       const goals1 = generateGoals(false, team1Prob);
       // Ensure team2 actually wins
-      const actualGoals1 = goals1 >= goals2 ? goals2 - 1 : goals1;
-      return { team1: Math.max(0, actualGoals1), team2: goals2, isDraw: false };
+      let actualGoals1 = goals1 >= goals2 ? goals2 - 1 : goals1;
+      // Cap total goals to prevent unrealistic scores
+      const capped = capTotalGoals(actualGoals1, goals2, 7);
+      return { team1: Math.max(0, capped.goals1), team2: capped.goals2, isDraw: false };
     } else {
       // Draw - both teams score the same
       const drawRand = Math.random();
       // Draws are usually low scoring: 0-0, 1-1, 2-2, rarely 3-3 or higher
+      // Cap draws at 3-3 to keep total realistic (6 goals max for draws)
       let goals;
       if (drawRand < 0.35) goals = 0;
       else if (drawRand < 0.65) goals = 1;
       else if (drawRand < 0.85) goals = 2;
-      else if (drawRand < 0.95) goals = 3;
-      else goals = 4; // Very rare 4-4 or higher
+      else if (drawRand < 0.97) goals = 3;
+      else goals = 3; // Cap at 3-3 (very rare, but 4-4 would be 8 total which is too high)
       
       return { team1: goals, team2: goals, isDraw: true };
     }
@@ -892,7 +1001,7 @@ function SimulatorPage() {
                             >
                               <div className="team-cell">
                                 <span className="position-number">{index + 1}.</span>
-                                <span className="team-name">{team.team}</span>
+                                <span className="team-name">{getCountryCode(team.team)}</span>
                               </div>
                               <div>{team.played || 0}</div>
                               <div>{team.wins || 0}</div>
@@ -912,7 +1021,7 @@ function SimulatorPage() {
                         {groups[groupName].teams.map((team, index) => (
                           <div key={index} className={`group-team pot-${team.pot}`}>
                             <span className="position-number">{index + 1}.</span>
-                            <span className="team-name">{team.name}</span>
+                            <span className="team-name">{getCountryCode(team.name)}</span>
                             <span className="pot-badge">Pot {team.pot}</span>
                           </div>
                         ))}
@@ -923,7 +1032,7 @@ function SimulatorPage() {
                         <h4>Matches</h4>
                         {matches.map((match, idx) => (
                           <div key={idx} className="match-result">
-                            {match.team1} {match.score1} - {match.score2} {match.team2}
+                            {getCountryCode(match.team1)} {match.score1} - {match.score2} {getCountryCode(match.team2)}
                           </div>
                         ))}
                       </div>
@@ -1054,7 +1163,7 @@ function SimulatorPage() {
               <div className="champion-announcement">
                 <div className="champion-effect">
                   <h2>🏆 CHAMPION 🏆</h2>
-                  <div className="champion-name">{champion}</div>
+                  <div className="champion-name">{getFullCountryName(champion)}</div>
                 </div>
               </div>
             )}
@@ -1073,11 +1182,17 @@ function SimulatorPage() {
                         {roundIndex === 3 && 'Semifinals'}
                       </div>
                       <div className={`round-matchups-${roundIndex + 1}`}>
-                        {round.map((matchup, matchupIndex) => (
-                          <div key={matchupIndex} className="matchup-wrapper">
+                        {round.map((matchup, matchupIndex) => {
+                          const topPosition = calculateMatchupTop(roundIndex, matchupIndex, round.length);
+                          return (
+                          <div 
+                            key={matchupIndex} 
+                            className="matchup-wrapper"
+                            style={{ position: 'absolute', top: `${topPosition}px` }}
+                          >
                             <div className="matchup">
                               <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
-                                {matchup.team1 || 'TBD'}
+                                {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                               </div>
                               {simulatedKnockout && matchup.score1 !== null && (
                                 <div className="match-score">
@@ -1089,11 +1204,12 @@ function SimulatorPage() {
                               )}
                               <div className="vs">vs</div>
                               <div className={`team ${!matchup.team2 ? 'empty' : ''} ${matchup.winner === matchup.team2 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team1 ? 'wait' : ''}`}>
-                                {matchup.team2 || 'TBD'}
+                                {matchup.team2 ? getCountryCode(matchup.team2) : 'TBD'}
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -1107,7 +1223,7 @@ function SimulatorPage() {
                   <div key={matchupIndex} className="matchup-wrapper final-wrapper">
                     <div className="matchup final-matchup">
                       <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''} ${champion === matchup.team1 ? 'champion' : ''}`}>
-                        {matchup.team1 || 'TBD'}
+                        {matchup.team1 ? getFullCountryName(matchup.team1) : 'TBD'}
                       </div>
                       {simulatedKnockout && matchup.score1 !== null && (
                         <div className="match-score">
@@ -1119,12 +1235,12 @@ function SimulatorPage() {
                       )}
                       <div className="vs">vs</div>
                       <div className={`team ${!matchup.team2 ? 'empty' : ''} ${matchup.winner === matchup.team2 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team1 ? 'wait' : ''} ${champion === matchup.team2 ? 'champion' : ''}`}>
-                        {matchup.team2 || 'TBD'}
+                        {matchup.team2 ? getFullCountryName(matchup.team2) : 'TBD'}
                       </div>
                     </div>
                     {matchup.winner && (
                       <div className="champion-box">
-                        <div className="champion-team">{matchup.winner}</div>
+                        <div className="champion-team">{getFullCountryName(matchup.winner)}</div>
                       </div>
                     )}
                   </div>
@@ -1174,11 +1290,16 @@ function SimulatorPage() {
                       <div className={`round-matchups-${roundIndex + 1}`}>
                         {[...round].reverse().map((matchup, reversedIndex) => {
                           const matchupIndex = round.length - 1 - reversedIndex;
+                          const topPosition = calculateMatchupTop(roundIndex, matchupIndex, round.length);
                           return (
-                            <div key={matchupIndex} className="matchup-wrapper">
+                            <div 
+                              key={matchupIndex} 
+                              className="matchup-wrapper"
+                              style={{ position: 'absolute', top: `${topPosition}px` }}
+                            >
                               <div className="matchup">
                                 <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
-                                  {matchup.team1 || 'TBD'}
+                                  {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                                 </div>
                                 {simulatedKnockout && matchup.score1 !== null && (
                                   <div className="match-score">
@@ -1190,7 +1311,7 @@ function SimulatorPage() {
                                 )}
                                 <div className="vs">vs</div>
                                 <div className={`team ${!matchup.team2 ? 'empty' : ''} ${matchup.winner === matchup.team2 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team1 ? 'wait' : ''}`}>
-                                  {matchup.team2 || 'TBD'}
+                                  {matchup.team2 ? getCountryCode(matchup.team2) : 'TBD'}
                                 </div>
                               </div>
                             </div>
