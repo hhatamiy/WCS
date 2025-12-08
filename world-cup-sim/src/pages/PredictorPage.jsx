@@ -234,6 +234,11 @@ function PredictorPage() {
 
     setGroups(newGroups);
     setDraggedTeam(null);
+    
+    // Reset knockout bracket and related state when groups change
+    setThirdPlaceTeams([]);
+    setKnockoutBracket(null);
+    setChampion(null);
   };
 
   // Advance teams to third place ranking
@@ -263,6 +268,10 @@ function PredictorPage() {
     [newThirdPlace[index], newThirdPlace[targetIndex]] = [newThirdPlace[targetIndex], newThirdPlace[index]];
     
     setThirdPlaceTeams(newThirdPlace);
+    
+    // Reset knockout bracket when third place ranking changes
+    setKnockoutBracket(null);
+    setChampion(null);
   };
 
   // Drag and drop handlers for third place ranking
@@ -293,6 +302,10 @@ function PredictorPage() {
     
     setThirdPlaceTeams(newThirdPlace);
     setDraggedThirdPlaceIndex(null);
+    
+    // Reset knockout bracket when third place ranking changes
+    setKnockoutBracket(null);
+    setChampion(null);
   };
 
   // Generate knockout bracket with proper FIFA matching algorithm
