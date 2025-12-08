@@ -197,6 +197,10 @@ function PredictorPage() {
     navigate('/login');
   };
 
+  const handleAccount = () => {
+    navigate('/account-settings');
+  };
+
   const handleReset = () => {
     setGroups(initializeGroups());
     setThirdPlaceTeams([]);
@@ -602,6 +606,9 @@ function PredictorPage() {
           )}
           <button onClick={handleReset} className="reset-btn">
             Reset
+          </button>
+          <button onClick={handleAccount} className="account-btn">
+            My Account
           </button>
           <button onClick={handleLogout} className="logout-btn">
             Logout
