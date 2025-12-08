@@ -478,6 +478,8 @@ function PredictorPage() {
     let matchup;
     if (side === 'final') {
       matchup = newBracket.final[matchupIndex];
+    } else if (side === 'thirdPlacePlayoff') {
+      matchup = newBracket.thirdPlacePlayoff[matchupIndex];
     } else {
       matchup = newBracket[side][roundIndex][matchupIndex];
     }
