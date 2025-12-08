@@ -505,7 +505,7 @@ function DashboardPage() {
                       return (
                         <div
                           key={index}
-                          className={`group-team pot-${team.pot}`}
+                          className={`group-team pos-${index + 1}`}
                           draggable
                           onDragStart={(e) => handleDragStart(e, groupName, index)}
                           onDragOver={handleDragOver}
@@ -626,7 +626,7 @@ function DashboardPage() {
                         {roundIndex === 2 && 'Quarterfinals'}
                         {roundIndex === 3 && 'Semifinals'}
                       </div>
-                      <div className="round-matchups">
+                      <div className={`round-matchups-${roundIndex + 1}`}>
                         {round.map((matchup, matchupIndex) => (
                           <div key={matchupIndex} className="matchup-wrapper">
                             <div 
@@ -641,7 +641,7 @@ function DashboardPage() {
                               <div
                                 className={`team ${!matchup.team1 ? 'empty' : ''} ${
                                   isBracketTeamClickable('left', roundIndex, matchupIndex) ? 'clickable' : ''
-                                } ${matchup.winner === matchup.team1 ? 'winner' : ''}`}
+                                } ${matchup.winner === matchup.team1 ? 'winner' : 'loser'} ${matchup.team2 ? 'set' : 'wait'}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (isBracketTeamClickable('left', roundIndex, matchupIndex)) {
@@ -655,7 +655,7 @@ function DashboardPage() {
                               <div
                                 className={`team ${!matchup.team2 ? 'empty' : ''} ${
                                   isBracketTeamClickable('left', roundIndex, matchupIndex) ? 'clickable' : ''
-                                } ${matchup.winner === matchup.team2 ? 'winner' : ''}`}
+                                } ${matchup.winner === matchup.team2 ? 'winner' : 'loser'} ${matchup.team2 ? 'set' : 'wait'}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (isBracketTeamClickable('left', roundIndex, matchupIndex)) {
@@ -744,7 +744,7 @@ function DashboardPage() {
                         {roundIndex === 2 && 'Quarterfinals'}
                         {roundIndex === 3 && 'Semifinals'}
                       </div>
-                      <div className="round-matchups">
+                      <div className={`round-matchups-${roundIndex + 1}`}>
                         {[...round].reverse().map((matchup, reversedIndex) => {
                           const matchupIndex = round.length - 1 - reversedIndex;
                           return (
