@@ -122,6 +122,7 @@ function PredictorPage() {
         return {
           groups: parsed.groups || initializeGroups(),
           thirdPlaceTeams: parsed.thirdPlaceTeams || [],
+          selectedThirdPlaceGroups: parsed.selectedThirdPlaceGroups ? new Set(parsed.selectedThirdPlaceGroups) : new Set(),
           knockoutBracket: parsed.knockoutBracket || null,
           champion: parsed.champion || null,
           currentView: parsed.currentView || 'groups'
@@ -133,6 +134,7 @@ function PredictorPage() {
     return {
       groups: initializeGroups(),
       thirdPlaceTeams: [],
+      selectedThirdPlaceGroups: new Set(),
       knockoutBracket: null,
       champion: null,
       currentView: location.state?.view || 'groups'
@@ -144,24 +146,25 @@ function PredictorPage() {
   const initialView = location.state?.view || savedState.currentView;
   const [groups, setGroups] = useState(savedState.groups);
   const [thirdPlaceTeams, setThirdPlaceTeams] = useState(savedState.thirdPlaceTeams);
+  const [selectedThirdPlaceGroups, setSelectedThirdPlaceGroups] = useState(savedState.selectedThirdPlaceGroups);
   const [knockoutBracket, setKnockoutBracket] = useState(savedState.knockoutBracket);
   const [champion, setChampion] = useState(savedState.champion);
   const [draggedTeam, setDraggedTeam] = useState(null);
   const [currentView, setCurrentView] = useState(initialView);
   const [groupWinnerProbs, setGroupWinnerProbs] = useState({});
-  const [draggedThirdPlaceIndex, setDraggedThirdPlaceIndex] = useState(null);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
     const stateToSave = {
       groups,
       thirdPlaceTeams,
+      selectedThirdPlaceGroups: Array.from(selectedThirdPlaceGroups),
       knockoutBracket,
       champion,
       currentView
     };
     localStorage.setItem('predictorState', JSON.stringify(stateToSave));
-  }, [groups, thirdPlaceTeams, knockoutBracket, champion, currentView]);
+  }, [groups, thirdPlaceTeams, selectedThirdPlaceGroups, knockoutBracket, champion, currentView]);
 
   // Fetch group winner probabilities when groups are loaded
   useEffect(() => {
@@ -204,6 +207,7 @@ function PredictorPage() {
   const handleReset = () => {
     setGroups(initializeGroups());
     setThirdPlaceTeams([]);
+    setSelectedThirdPlaceGroups(new Set());
     setKnockoutBracket(null);
     setChampion(null);
     setCurrentView('groups');
@@ -241,6 +245,7 @@ function PredictorPage() {
     
     // Reset knockout bracket and related state when groups change
     setThirdPlaceTeams([]);
+    setSelectedThirdPlaceGroups(new Set());
     setKnockoutBracket(null);
     setChampion(null);
   };
@@ -251,76 +256,51 @@ function PredictorPage() {
     const thirdPlace = groupNames.map(groupName => ({
       groupName,
       team: groups[groupName].teams[2], // 3rd position (index 2)
-      points: 0, // User will rank these
+      points: 0,
       goalDifference: 0,
       goalsScored: 0
     }));
     setThirdPlaceTeams(thirdPlace);
+    // Initialize with existing selections if any, otherwise start empty
+    if (selectedThirdPlaceGroups.size === 0) {
+      setSelectedThirdPlaceGroups(new Set());
+    }
     setCurrentView('third-place');
   };
 
-  // Move third place team up/down in ranking
-  const moveThirdPlaceTeam = (index, direction) => {
-    if ((direction === 'up' && index === 0) || (direction === 'down' && index === thirdPlaceTeams.length - 1)) {
-      return;
+
+  // Toggle third place team selection
+  const toggleThirdPlaceSelection = (groupName) => {
+    const newSelected = new Set(selectedThirdPlaceGroups);
+    if (newSelected.has(groupName)) {
+      newSelected.delete(groupName);
+    } else {
+      // Only allow selecting if we have less than 8 selected
+      if (newSelected.size < 8) {
+        newSelected.add(groupName);
+      }
     }
-
-    const newThirdPlace = [...thirdPlaceTeams];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    setSelectedThirdPlaceGroups(newSelected);
     
-    // Swap
-    [newThirdPlace[index], newThirdPlace[targetIndex]] = [newThirdPlace[targetIndex], newThirdPlace[index]];
-    
-    setThirdPlaceTeams(newThirdPlace);
-    
-    // Reset knockout bracket when third place ranking changes
-    setKnockoutBracket(null);
-    setChampion(null);
-  };
-
-  // Drag and drop handlers for third place ranking
-  const handleThirdPlaceDragStart = (e, index) => {
-    setDraggedThirdPlaceIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ''); // Required for Firefox
-  };
-
-  const handleThirdPlaceDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleThirdPlaceDrop = (e, targetIndex) => {
-    e.preventDefault();
-    
-    if (draggedThirdPlaceIndex === null || draggedThirdPlaceIndex === targetIndex) {
-      setDraggedThirdPlaceIndex(null);
-      return;
-    }
-
-    const newThirdPlace = [...thirdPlaceTeams];
-    
-    // Swap teams
-    [newThirdPlace[draggedThirdPlaceIndex], newThirdPlace[targetIndex]] = 
-      [newThirdPlace[targetIndex], newThirdPlace[draggedThirdPlaceIndex]];
-    
-    setThirdPlaceTeams(newThirdPlace);
-    setDraggedThirdPlaceIndex(null);
-    
-    // Reset knockout bracket when third place ranking changes
+    // Reset knockout bracket when selections change
     setKnockoutBracket(null);
     setChampion(null);
   };
 
   // Generate knockout bracket with proper FIFA matching algorithm
   const generateKnockoutBracket = () => {
+    // Only proceed if exactly 8 teams are selected
+    if (selectedThirdPlaceGroups.size !== 8) {
+      return;
+    }
+
     const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
     
-    // Get group winners, runners-up, and top 8 third-place teams
+    // Get group winners, runners-up, and selected third-place teams
     const groupWinners = {};
     const runnersUp = {};
-    const top8Third = thirdPlaceTeams.slice(0, 8);
-    const thirdPlaceGroups = new Set(top8Third.map(item => item.groupName));
+    const selectedThird = thirdPlaceTeams.filter(item => selectedThirdPlaceGroups.has(item.groupName));
+    const thirdPlaceGroups = new Set(Array.from(selectedThirdPlaceGroups));
     
     groupNames.forEach(groupName => {
       if (groups[groupName]) {
@@ -331,7 +311,7 @@ function PredictorPage() {
 
     // Determine which groups' third-place teams advanced
     const thirdPlaceMap = {};
-    top8Third.forEach(item => {
+    selectedThird.forEach(item => {
       thirdPlaceMap[item.groupName] = item.team.name;
     });
 
@@ -558,8 +538,8 @@ function PredictorPage() {
     try {
       const res = await api.post('/glaze/bracket', { bracket });
       alert(res.data.script);
-    } catch (err) {
-      console.error('Error glazing bracket');
+    } catch (error) {
+      console.error('Error glazing bracket:', error);
       return;
     }
   };
@@ -671,62 +651,44 @@ function PredictorPage() {
 
         {currentView === 'third-place' && (
           <div className="third-place-section">
-            <h2>Rank Third Place Teams</h2>
-            <p className="instruction-text">Top 8 teams will advance to the knockout stage</p>
+            <h2>Select 8 Third Place Teams</h2>
+            <p className="instruction-text">
+              Click on teams to select which 8 will advance to the knockout stage. 
+              {selectedThirdPlaceGroups.size > 0 && (
+                <span className="selection-count"> {selectedThirdPlaceGroups.size}/8 selected</span>
+              )}
+            </p>
             
-            <div className="third-place-table">
-              {thirdPlaceTeams.map((item, index) => (
-                <React.Fragment key={index}>
+            <div className="third-place-grid">
+              {thirdPlaceTeams.map((item) => {
+                const isSelected = selectedThirdPlaceGroups.has(item.groupName);
+                return (
                   <div
-                    className={`third-place-row ${index < 8 ? 'qualified' : 'eliminated'} ${draggedThirdPlaceIndex === index ? 'dragging' : ''}`}
-                    draggable
-                    onDragStart={(e) => handleThirdPlaceDragStart(e, index)}
-                    onDragOver={handleThirdPlaceDragOver}
-                    onDrop={(e) => handleThirdPlaceDrop(e, index)}
-                    onClick={(e) => e.stopPropagation()}
+                    key={item.groupName}
+                    className={`third-place-card ${isSelected ? 'selected' : ''} ${selectedThirdPlaceGroups.size >= 8 && !isSelected ? 'disabled' : ''}`}
+                    onClick={() => toggleThirdPlaceSelection(item.groupName)}
                   >
-                    <div className="rank-number">{index + 1}</div>
                     <div className="team-info">
                       <span className="group-label">Group {item.groupName}</span>
                       <span className="team-name">{item.team.name}</span>
                     </div>
-                    <div className="rank-controls">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveThirdPlaceTeam(index, 'up');
-                        }}
-                        disabled={index === 0}
-                        className="rank-btn"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveThirdPlaceTeam(index, 'down');
-                        }}
-                        disabled={index === thirdPlaceTeams.length - 1}
-                        className="rank-btn"
-                      >
-                        ▼
-                      </button>
-                    </div>
+                    {isSelected && (
+                      <div className="selection-indicator">✓</div>
+                    )}
                   </div>
-                  {index === 7 && (
-                    <div className="qualification-separator">
-                      <div className="separator-line"></div>
-                      <div className="separator-label">Qualification Line</div>
-                      <div className="separator-line"></div>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
+                );
+              })}
             </div>
 
             <div className="action-section">
-              <button onClick={generateKnockoutBracket} className="advance-btn">
-                Generate Knockout Bracket
+              <button 
+                onClick={generateKnockoutBracket} 
+                className="advance-btn"
+                disabled={selectedThirdPlaceGroups.size !== 8}
+              >
+                {selectedThirdPlaceGroups.size === 8 
+                  ? 'Generate Knockout Bracket' 
+                  : `Select ${8 - selectedThirdPlaceGroups.size} more team${8 - selectedThirdPlaceGroups.size === 1 ? '' : 's'}`}
               </button>
             </div>
           </div>
