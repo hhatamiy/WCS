@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 import RegisterPage from './pages/RegisterPage';
 import PredictorPage from './pages/PredictorPage';
 import DrawSimulatorPage from './pages/DrawSimulatorPage';
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/account-settings" element={<AccountSettingsPage />} />
         <Route
           path="/predictor"
           element={
