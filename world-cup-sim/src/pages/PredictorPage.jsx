@@ -18,15 +18,20 @@ const TEAM_ALTERNATIVES = {
 
 // Helper to check if a team has alternatives (either is a key or is in any alternatives list)
 function hasAlternatives(teamName) {
+  if (!teamName) return false;
+  
+  // Direct key lookup
   if (TEAM_ALTERNATIVES.hasOwnProperty(teamName)) {
     return true;
   }
+  
   // Check if the team is in any of the alternative lists
   for (const alternatives of Object.values(TEAM_ALTERNATIVES)) {
     if (alternatives.includes(teamName)) {
       return true;
     }
   }
+  
   return false;
 }
 
@@ -344,6 +349,7 @@ function PredictorPage() {
   const [groupWinnerProbs, setGroupWinnerProbs] = useState({});
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'groupName-index'
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -466,9 +472,12 @@ function PredictorPage() {
     
     if (openDropdown === dropdownKey) {
       setOpenDropdown(null);
+      setDropdownButtonRef(null);
     } else {
-      // Calculate position for fixed dropdown - position it right below the button
+      // Calculate position for absolute dropdown - use document coordinates
+      // Add scroll offsets so dropdown stays with the button when scrolling
       const button = e.currentTarget;
+      setDropdownButtonRef(button);
       const rect = button.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 2,
@@ -477,6 +486,28 @@ function PredictorPage() {
       setOpenDropdown(dropdownKey);
     }
   };
+
+  // Update dropdown position on scroll
+  useEffect(() => {
+    if (!openDropdown || !dropdownButtonRef) return;
+
+    const updatePosition = () => {
+      if (!dropdownButtonRef) return;
+      const rect = dropdownButtonRef.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 2,
+        left: rect.left + window.scrollX
+      });
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdown, dropdownButtonRef]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -852,7 +883,7 @@ function PredictorPage() {
                       }
                       return (
                         <div
-                          key={index}
+                          key={`${groupName}-${index}-${team.name}`}
                           className="group-team"
                           style={{
                             '--position-gradient': positionGradient
@@ -866,10 +897,18 @@ function PredictorPage() {
                           <span className="position-number">{index + 1}.</span>
                           <span className="team-name">{team.name}</span>
                           {teamHasAlternatives && currentView === 'groups' && (
-                            <div className="team-dropdown-container">
+                            <div className="team-dropdown-container" onClick={(e) => e.stopPropagation()}>
                               <button
+                                ref={(el) => {
+                                  if (openDropdown === `${groupName}-${index}` && el) {
+                                    setDropdownButtonRef(el);
+                                  }
+                                }}
                                 className="team-dropdown-toggle"
-                                onClick={(e) => toggleDropdown(groupName, index, e)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleDropdown(groupName, index, e);
+                                }}
                                 title="Select alternative team"
                               >
                                 <span className="dropdown-arrow">▼</span>

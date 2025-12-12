@@ -429,6 +429,7 @@ function SimulatorPage() {
   const [simulatedKnockout, setSimulatedKnockout] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'groupName-index'
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
 
 
   const handleReset = () => {
@@ -478,9 +479,12 @@ function SimulatorPage() {
     
     if (openDropdown === dropdownKey) {
       setOpenDropdown(null);
+      setDropdownButtonRef(null);
     } else {
-      // Calculate position for fixed dropdown - position it right below the button
+      // Calculate position for absolute dropdown - use document coordinates
+      // Add scroll offsets so dropdown stays with the button when scrolling
       const button = e.currentTarget;
+      setDropdownButtonRef(button);
       const rect = button.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 2,
@@ -489,6 +493,28 @@ function SimulatorPage() {
       setOpenDropdown(dropdownKey);
     }
   };
+
+  // Update dropdown position on scroll
+  useEffect(() => {
+    if (!openDropdown || !dropdownButtonRef) return;
+
+    const updatePosition = () => {
+      if (!dropdownButtonRef) return;
+      const rect = dropdownButtonRef.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 2,
+        left: rect.left + window.scrollX
+      });
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdown, dropdownButtonRef]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1124,10 +1150,18 @@ function SimulatorPage() {
                               <span className="position-number">{index + 1}.</span>
                               <span className="team-name">{getCountryCode(team.name)}</span>
                               {teamHasAlternatives && currentView === 'groups' && !simulatedGroups && (
-                                <div className="team-dropdown-container">
+                                <div className="team-dropdown-container" onClick={(e) => e.stopPropagation()}>
                                   <button
+                                    ref={(el) => {
+                                      if (openDropdown === `${groupName}-${index}` && el) {
+                                        setDropdownButtonRef(el);
+                                      }
+                                    }}
                                     className="team-dropdown-toggle"
-                                    onClick={(e) => toggleDropdown(groupName, index, e)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleDropdown(groupName, index, e);
+                                    }}
                                     title="Select alternative team"
                                   >
                                     <span className="dropdown-arrow">▼</span>
