@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: world-cup-sim-backend
+    env: node
+    region: oregon  # Change to your preferred region: oregon, frankfurt, singapore, mumbai, ohio
+    plan: free  # Change to 'starter' or 'standard' for paid plans
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: backend
+    envVars:
+      - key: MONGO_URI
+        sync: false  # Set this manually in Render dashboard
+      - key: NODE_ENV
+        value: production
+    # Note: PORT is automatically set by Render, no need to specify
+
