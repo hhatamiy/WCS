@@ -54,8 +54,18 @@ function getLookupKey(advancingGroups) {
 }
 
 /**
- * Fallback algorithm using the simplified priority-based approach
+ * Fallback algorithm using the official FIFA 2026 bracket structure
  * This is used when a combination is not found in the lookup table
+ * 
+ * Array indices are ordered to match the bracket flow:
+ * - Indices 0-1 feed into Round of 16 Match 90
+ * - Indices 2-3 feed into Round of 16 Match 89
+ * - Indices 4-5 feed into Round of 16 Match 91
+ * - Indices 6-7 feed into Round of 16 Match 92
+ * - Indices 8-9 feed into Round of 16 Match 93
+ * - Indices 10-11 feed into Round of 16 Match 94
+ * - Indices 12-13 feed into Round of 16 Match 95
+ * - Indices 14-15 feed into Round of 16 Match 96
  */
 function generateMatchupsFallback(advancingGroups, groupWinners, runnersUp, thirdPlaceMap) {
   const roundOf32 = [];
@@ -69,112 +79,112 @@ function generateMatchupsFallback(advancingGroups, groupWinners, runnersUp, thir
     return null;
   };
 
-  // Match 1: Winner Group E vs 3rd (A/B/C/D/F)
-  roundOf32.push({
-    team1: groupWinners['E'] || 'TBD',
-    team2: getThirdPlace(['A', 'B', 'C', 'D', 'F']) || 'TBD',
-    winner: null
-  });
-
-  // Match 2: Winner Group I vs 3rd (C/D/F/G/H)
-  roundOf32.push({
-    team1: groupWinners['I'] || 'TBD',
-    team2: getThirdPlace(['C', 'D', 'F', 'G', 'H']) || 'TBD',
-    winner: null
-  });
-
-  // Match 3: Runner-up Group A vs Runner-up Group B
+  // Index 0: Match 73 - Runner-up A vs Runner-up B
   roundOf32.push({
     team1: runnersUp['A'] || 'TBD',
     team2: runnersUp['B'] || 'TBD',
     winner: null
   });
 
-  // Match 4: Winner Group F vs Runner-up Group C
+  // Index 1: Match 75 - Winner F vs Runner-up C
   roundOf32.push({
     team1: groupWinners['F'] || 'TBD',
     team2: runnersUp['C'] || 'TBD',
     winner: null
   });
 
-  // Match 5: Runner-up Group K vs Runner-up Group L
+  // Index 2: Match 74 - Winner E vs 3rd (A/B/C/D/F)
+  roundOf32.push({
+    team1: groupWinners['E'] || 'TBD',
+    team2: getThirdPlace(['A', 'B', 'C', 'D', 'F']) || 'TBD',
+    winner: null
+  });
+
+  // Index 3: Match 77 - Winner I vs 3rd (C/D/F/G/H)
+  roundOf32.push({
+    team1: groupWinners['I'] || 'TBD',
+    team2: getThirdPlace(['C', 'D', 'F', 'G', 'H']) || 'TBD',
+    winner: null
+  });
+
+  // Index 4: Match 76 - Winner C vs Runner-up F
+  roundOf32.push({
+    team1: groupWinners['C'] || 'TBD',
+    team2: runnersUp['F'] || 'TBD',
+    winner: null
+  });
+
+  // Index 5: Match 78 - Runner-up E vs Runner-up I
+  roundOf32.push({
+    team1: runnersUp['E'] || 'TBD',
+    team2: runnersUp['I'] || 'TBD',
+    winner: null
+  });
+
+  // Index 6: Match 79 - Winner A vs 3rd (C/E/F/H/I)
+  roundOf32.push({
+    team1: groupWinners['A'] || 'TBD',
+    team2: getThirdPlace(['C', 'E', 'F', 'H', 'I']) || 'TBD',
+    winner: null
+  });
+
+  // Index 7: Match 80 - Winner L vs 3rd (E/H/I/J/K)
+  roundOf32.push({
+    team1: groupWinners['L'] || 'TBD',
+    team2: getThirdPlace(['E', 'H', 'I', 'J', 'K']) || 'TBD',
+    winner: null
+  });
+
+  // Index 8: Match 83 - Runner-up K vs Runner-up L
   roundOf32.push({
     team1: runnersUp['K'] || 'TBD',
     team2: runnersUp['L'] || 'TBD',
     winner: null
   });
 
-  // Match 6: Winner Group H vs Runner-up Group J
+  // Index 9: Match 84 - Winner H vs Runner-up J
   roundOf32.push({
     team1: groupWinners['H'] || 'TBD',
     team2: runnersUp['J'] || 'TBD',
     winner: null
   });
 
-  // Match 7: Winner Group D vs 3rd (B/E/F/I/J)
+  // Index 10: Match 81 - Winner D vs 3rd (B/E/F/I/J)
   roundOf32.push({
     team1: groupWinners['D'] || 'TBD',
     team2: getThirdPlace(['B', 'E', 'F', 'I', 'J']) || 'TBD',
     winner: null
   });
 
-  // Match 8: Winner Group G vs 3rd (A/E/H/I/J)
+  // Index 11: Match 82 - Winner G vs 3rd (A/E/H/I/J)
   roundOf32.push({
     team1: groupWinners['G'] || 'TBD',
     team2: getThirdPlace(['A', 'E', 'H', 'I', 'J']) || 'TBD',
     winner: null
   });
 
-  // Match 9: Winner Group C vs 3rd (C/E/F/H/I)
+  // Index 12: Match 86 - Winner J vs Runner-up H
   roundOf32.push({
-    team1: groupWinners['C'] || 'TBD',
-    team2: getThirdPlace(['C', 'E', 'F', 'H', 'I']) || 'TBD',
+    team1: groupWinners['J'] || 'TBD',
+    team2: runnersUp['H'] || 'TBD',
     winner: null
   });
 
-  // Match 10: Runner-up Group F vs Runner-up Group E
+  // Index 13: Match 88 - Runner-up D vs Runner-up G
   roundOf32.push({
-    team1: runnersUp['F'] || 'TBD',
-    team2: runnersUp['E'] || 'TBD',
-    winner: null
-  });
-
-  // Match 11: Runner-up Group I vs Runner-up Group D
-  roundOf32.push({
-    team1: runnersUp['I'] || 'TBD',
-    team2: runnersUp['D'] || 'TBD',
-    winner: null
-  });
-
-  // Match 12: Winner Group A vs 3rd (varies by CSV - using fallback priority)
-  roundOf32.push({
-    team1: groupWinners['A'] || 'TBD',
-    team2: getThirdPlace(['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']) || 'TBD',
-    winner: null
-  });
-
-  // Match 13: Winner Group L vs 3rd (C/E/F/H/I)
-  roundOf32.push({
-    team1: groupWinners['L'] || 'TBD',
-    team2: getThirdPlace(['C', 'E', 'F', 'H', 'I']) || 'TBD',
-    winner: null
-  });
-
-  // Match 14: Runner-up Group H vs Runner-up Group G
-  roundOf32.push({
-    team1: runnersUp['H'] || 'TBD',
+    team1: runnersUp['D'] || 'TBD',
     team2: runnersUp['G'] || 'TBD',
     winner: null
   });
 
-  // Match 15: Winner Group B vs 3rd (varies by CSV - using fallback priority)
+  // Index 14: Match 85 - Winner B vs 3rd (E/F/G/I/J)
   roundOf32.push({
     team1: groupWinners['B'] || 'TBD',
-    team2: getThirdPlace(['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']) || 'TBD',
+    team2: getThirdPlace(['E', 'F', 'G', 'I', 'J']) || 'TBD',
     winner: null
   });
 
-  // Match 16: Winner Group K vs 3rd (D/E/I/J/L)
+  // Index 15: Match 87 - Winner K vs 3rd (D/E/I/J/L)
   roundOf32.push({
     team1: groupWinners['K'] || 'TBD',
     team2: getThirdPlace(['D', 'E', 'I', 'J', 'L']) || 'TBD',

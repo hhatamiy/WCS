@@ -33,36 +33,40 @@ function parseCSVToLookupTable(csvPath) {
   const lookupTable = {};
   
   // Mapping from CSV matchup columns to Round of 32 match indices
-  // Based on CSV structure:
+  // Based on official FIFA 2026 World Cup bracket flow:
   // CSV columns 14-21: 1A vs, 1B vs, 1D vs, 1E vs, 1G vs, 1I vs, 1K vs, 1L vs
-  // These map to matches where group winners play third-place teams
+  // 
+  // Round of 32 array order (pairs feed into Round of 16):
+  // Index 0-1: Match 73, 75 → Round of 16 Match 90
+  // Index 2-3: Match 74, 77 → Round of 16 Match 89
+  // Index 4-5: Match 76, 78 → Round of 16 Match 91
+  // Index 6-7: Match 79, 80 → Round of 16 Match 92
+  // Index 8-9: Match 83, 84 → Round of 16 Match 93
+  // Index 10-11: Match 81, 82 → Round of 16 Match 94
+  // Index 12-13: Match 86, 88 → Round of 16 Match 95
+  // Index 14-15: Match 85, 87 → Round of 16 Match 96
   const csvMatchMapping = [
-    { csvColIndex: 0, matchIndex: 11, winnerGroup: 'A' },  // 1A vs -> Match 12 (Winner A vs 3rd)
-    { csvColIndex: 1, matchIndex: 14, winnerGroup: 'B' },  // 1B vs -> Match 15 (Winner B vs 3rd)
-    { csvColIndex: 2, matchIndex: 6, winnerGroup: 'D' },   // 1D vs -> Match 7 (Winner D vs 3rd)
-    { csvColIndex: 3, matchIndex: 0, winnerGroup: 'E' },   // 1E vs -> Match 1 (Winner E vs 3rd)
-    { csvColIndex: 4, matchIndex: 7, winnerGroup: 'G' },   // 1G vs -> Match 8 (Winner G vs 3rd)
-    { csvColIndex: 5, matchIndex: 1, winnerGroup: 'I' },   // 1I vs -> Match 2 (Winner I vs 3rd)
-    { csvColIndex: 6, matchIndex: 15, winnerGroup: 'K' },  // 1K vs -> Match 16 (Winner K vs 3rd)
-    { csvColIndex: 7, matchIndex: 12, winnerGroup: 'L' },  // 1L vs -> Match 13 (Winner L vs 3rd)
+    { csvColIndex: 0, matchIndex: 6, winnerGroup: 'A' },   // 1A vs -> Index 6 (Match 79: Winner A vs 3rd)
+    { csvColIndex: 1, matchIndex: 14, winnerGroup: 'B' },  // 1B vs -> Index 14 (Match 85: Winner B vs 3rd)
+    { csvColIndex: 2, matchIndex: 10, winnerGroup: 'D' },  // 1D vs -> Index 10 (Match 81: Winner D vs 3rd)
+    { csvColIndex: 3, matchIndex: 2, winnerGroup: 'E' },   // 1E vs -> Index 2 (Match 74: Winner E vs 3rd)
+    { csvColIndex: 4, matchIndex: 11, winnerGroup: 'G' },  // 1G vs -> Index 11 (Match 82: Winner G vs 3rd)
+    { csvColIndex: 5, matchIndex: 3, winnerGroup: 'I' },   // 1I vs -> Index 3 (Match 77: Winner I vs 3rd)
+    { csvColIndex: 6, matchIndex: 15, winnerGroup: 'K' },  // 1K vs -> Index 15 (Match 87: Winner K vs 3rd)
+    { csvColIndex: 7, matchIndex: 7, winnerGroup: 'L' },   // 1L vs -> Index 7 (Match 80: Winner L vs 3rd)
   ];
   
   // Fixed matches that don't depend on third-place teams
-  // These are runner-up vs runner-up or winner vs runner-up matches
   const getFixedMatches = () => [
-    { matchIndex: 2, team1: { type: 'runner', group: 'A' }, team2: { type: 'runner', group: 'B' } }, // Match 3
-    { matchIndex: 3, team1: { type: 'winner', group: 'F' }, team2: { type: 'runner', group: 'C' } }, // Match 4
-    { matchIndex: 4, team1: { type: 'runner', group: 'K' }, team2: { type: 'runner', group: 'L' } }, // Match 5
-    { matchIndex: 5, team1: { type: 'winner', group: 'H' }, team2: { type: 'runner', group: 'J' } }, // Match 6
-    { matchIndex: 9, team1: { type: 'runner', group: 'F' }, team2: { type: 'runner', group: 'E' } }, // Match 10
-    { matchIndex: 10, team1: { type: 'runner', group: 'I' }, team2: { type: 'runner', group: 'D' } }, // Match 11
-    { matchIndex: 13, team1: { type: 'runner', group: 'H' }, team2: { type: 'runner', group: 'G' } }, // Match 14
+    { matchIndex: 0, team1: { type: 'runner', group: 'A' }, team2: { type: 'runner', group: 'B' } },  // Match 73
+    { matchIndex: 1, team1: { type: 'winner', group: 'F' }, team2: { type: 'runner', group: 'C' } },  // Match 75
+    { matchIndex: 4, team1: { type: 'winner', group: 'C' }, team2: { type: 'runner', group: 'F' } },  // Match 76
+    { matchIndex: 5, team1: { type: 'runner', group: 'E' }, team2: { type: 'runner', group: 'I' } },  // Match 78
+    { matchIndex: 8, team1: { type: 'runner', group: 'K' }, team2: { type: 'runner', group: 'L' } },  // Match 83
+    { matchIndex: 9, team1: { type: 'winner', group: 'H' }, team2: { type: 'runner', group: 'J' } },  // Match 84
+    { matchIndex: 12, team1: { type: 'winner', group: 'J' }, team2: { type: 'runner', group: 'H' } }, // Match 86
+    { matchIndex: 13, team1: { type: 'runner', group: 'D' }, team2: { type: 'runner', group: 'G' } }, // Match 88
   ];
-  
-  // Matches that need third-place teams but aren't in CSV (determined by priority rules)
-  // Match 8: Winner G vs 3rd (in CSV)
-  // Match 9: Winner C vs 3rd (not in CSV, needs priority)
-  // Match 15: Winner J vs 3rd (not in CSV, needs priority)
   
   dataLines.forEach((line, lineIndex) => {
     if (!line.trim()) return;
@@ -132,41 +136,8 @@ function parseCSVToLookupTable(csvPath) {
       }
     });
     
-    // Fill in remaining third-place matches using priority rules
-    // Match 9: Winner C vs 3rd (priority: E/F/H/I - exclude C itself!)
-    // This is the only winner-vs-third match not specified in the CSV
-    const getThirdPlaceForMatch9 = () => {
-      // IMPORTANT: A group's winner cannot play against its own third-place team
-      // So we exclude 'C' from the priority list
-      const priority = ['E', 'F', 'H', 'I'];
-      for (const group of priority) {
-        if (advancingGroups.includes(group)) {
-          return group;
-        }
-      }
-      
-      // Edge case: If none of E, F, H, I advanced, Winner C must face
-      // one of the other advancing third-place teams.
-      // Try to find any advancing group except C itself
-      const fallbackGroups = ['A', 'B', 'D', 'G', 'J', 'K', 'L'];
-      for (const group of fallbackGroups) {
-        if (advancingGroups.includes(group)) {
-          return group;
-        }
-      }
-      
-      return null;
-    };
-    
-    // Set Match 9 (index 8) - Winner C vs 3rd
-    const match9Third = getThirdPlaceForMatch9();
-    if (match9Third && !matchups[8]) {
-      matchups[8] = {
-        team1: { type: 'winner', group: 'C' },
-        team2: { type: 'third', group: match9Third }
-      };
-    }
-    
+    // All matchups are now either fixed or from CSV
+    // No additional priority-based matching needed
     // Verify we have all 16 matches
     const validMatchups = matchups.filter(m => m !== undefined);
     if (validMatchups.length === 16) {
