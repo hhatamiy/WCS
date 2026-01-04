@@ -350,6 +350,8 @@ function PredictorPage() {
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'groupName-index'
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
+  const [touchStartPos, setTouchStartPos] = useState(null);
+  const [touchedTeam, setTouchedTeam] = useState(null);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -450,6 +452,86 @@ function PredictorPage() {
     setChampion(null);
   };
 
+  // Handle team position swap with buttons (mobile-friendly)
+  const handleSwapTeams = (groupName, index1, index2) => {
+    if (index2 < 0 || index2 >= groups[groupName].teams.length) return;
+    
+    const newGroups = { ...groups };
+    const group = newGroups[groupName];
+    
+    // Swap teams
+    const temp = group.teams[index1];
+    group.teams[index1] = group.teams[index2];
+    group.teams[index2] = temp;
+    
+    setGroups(newGroups);
+    
+    // Reset knockout bracket and related state when groups change
+    setThirdPlaceTeams([]);
+    setSelectedThirdPlaceGroups(new Set());
+    setKnockoutBracket(null);
+    setChampion(null);
+  };
+
+  // Touch event handlers for mobile drag and drop
+  const handleTouchStart = (e, groupName, teamIndex) => {
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setTouchedTeam({ groupName, teamIndex });
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStartPos || !touchedTeam) return;
+    
+    // Prevent default scrolling while dragging
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e, targetGroupName, targetTeamIndex) => {
+    if (!touchedTeam || !touchStartPos) {
+      setTouchedTeam(null);
+      setTouchStartPos(null);
+      return;
+    }
+
+    // Only allow swaps within the same group
+    if (touchedTeam.groupName !== targetGroupName) {
+      setTouchedTeam(null);
+      setTouchStartPos(null);
+      return;
+    }
+
+    // Check if there was significant movement
+    const touch = e.changedTouches[0];
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    
+    // If minimal movement, don't swap (it's just a tap)
+    if (deltaY < 20) {
+      setTouchedTeam(null);
+      setTouchStartPos(null);
+      return;
+    }
+
+    // Perform the swap
+    const newGroups = { ...groups };
+    const sourceGroup = newGroups[touchedTeam.groupName];
+
+    const temp = sourceGroup.teams[touchedTeam.teamIndex];
+    sourceGroup.teams[touchedTeam.teamIndex] = sourceGroup.teams[targetTeamIndex];
+    sourceGroup.teams[targetTeamIndex] = temp;
+
+    setGroups(newGroups);
+    
+    // Reset knockout bracket and related state when groups change
+    setThirdPlaceTeams([]);
+    setSelectedThirdPlaceGroups(new Set());
+    setKnockoutBracket(null);
+    setChampion(null);
+
+    setTouchedTeam(null);
+    setTouchStartPos(null);
+  };
+
   // Handle team replacement from dropdown
   const handleTeamReplacement = (groupName, teamIndex, newTeamName) => {
     const newGroups = { ...groups };
@@ -527,10 +609,18 @@ function PredictorPage() {
       }
     };
 
+    const handleTouchOutside = (event) => {
+      if (openDropdown && !event.target.closest('.team-dropdown-container') && !event.target.closest('.team-dropdown-menu')) {
+        setOpenDropdown(null);
+      }
+    };
+
     if (openDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleTouchOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleTouchOutside);
       };
     }
   }, [openDropdown]);
@@ -863,7 +953,7 @@ function PredictorPage() {
         {currentView === 'groups' && (
           <div className="groups-section">
             <h2>Group Stage</h2>
-            <p className="instruction-text">Drag and drop teams to swap positions. Percentages are each team's probability of winning the group.</p>
+            <p className="instruction-text">Drag and drop teams to swap positions (or use arrow buttons on mobile). Percentages are each team's probability of winning the group.</p>
             
             <div className="groups-grid">
               {Object.keys(groups).map((groupName) => (
@@ -902,8 +992,37 @@ function PredictorPage() {
                           onDragStart={(e) => handleDragStart(e, groupName, index)}
                           onDragOver={(e) => handleDragOver(e, groupName)}
                           onDrop={(e) => handleDrop(e, groupName, index)}
+                          onTouchStart={(e) => handleTouchStart(e, groupName, index)}
+                          onTouchMove={(e) => handleTouchMove(e)}
+                          onTouchEnd={(e) => handleTouchEnd(e, groupName, index)}
                           onClick={(e) => e.stopPropagation()}
                         >
+                          <div className="team-swap-controls">
+                            <button
+                              className="swap-btn swap-up"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSwapTeams(groupName, index, index - 1);
+                              }}
+                              disabled={index === 0}
+                              title="Move up"
+                              aria-label="Move team up"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              className="swap-btn swap-down"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSwapTeams(groupName, index, index + 1);
+                              }}
+                              disabled={index === groups[groupName].teams.length - 1}
+                              title="Move down"
+                              aria-label="Move team down"
+                            >
+                              ▼
+                            </button>
+                          </div>
                           <span className="position-number">{index + 1}.</span>
                           <span className="team-name">{team.name}</span>
                           {teamHasAlternatives && currentView === 'groups' && (

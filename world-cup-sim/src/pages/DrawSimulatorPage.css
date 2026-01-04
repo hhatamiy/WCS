@@ -137,3 +137,89 @@
   border: 1px solid rgba(255, 0, 0, 0.3);
 }
 
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .simulator-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px 20px;
+  }
+
+  .simulator-header h1 {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .back-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .simulator-content {
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+
+  .draw-input-section {
+    padding: 25px 20px;
+  }
+
+  .draw-input-section label {
+    font-size: 16px;
+  }
+
+  .draw-name-input {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .draw-button {
+    padding: 14px 30px;
+    font-size: 18px;
+    width: 100%;
+  }
+
+  .info-section {
+    padding: 20px;
+  }
+
+  .info-section h2 {
+    font-size: 20px;
+  }
+
+  .info-section p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .simulator-header h1 {
+    font-size: 20px;
+  }
+
+  .back-btn {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .draw-input-section {
+    padding: 20px 15px;
+  }
+
+  .draw-button {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+
+  .info-section h2 {
+    font-size: 18px;
+  }
+
+  .info-section p {
+    font-size: 13px;
+  }
+}
+

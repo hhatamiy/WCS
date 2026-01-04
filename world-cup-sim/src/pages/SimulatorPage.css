@@ -263,6 +263,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
   pointer-events: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .team-dropdown-item {
@@ -902,19 +905,252 @@
   .simulator-header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 15px 20px;
   }
   
   .simulator-header h1 {
-    font-size: 24px;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-btn, .view-btn, .reset-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    min-height: 44px;
   }
   
   .groups-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .group-card {
+    padding: 15px;
+  }
+
+  .group-card h3 {
+    font-size: 20px;
   }
 
   .standings-header,
   .standings-row {
     grid-template-columns: 2fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr 0.5fr;
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+
+  .team-cell {
+    gap: 4px;
+  }
+
+  .position-number {
+    font-size: 12px;
+    width: 18px;
+  }
+
+  .content-container {
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+
+  .content-container h2 {
+    font-size: 24px;
+  }
+
+  .instruction-text {
+    font-size: 14px;
+  }
+
+  .simulate-btn, .advance-btn {
+    padding: 12px 30px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Third place table mobile */
+  .third-place-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .rank-number {
+    font-size: 18px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .team-info .team-name {
+    font-size: 15px;
+  }
+
+  .team-stats {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .stat-item {
+    font-size: 11px;
+  }
+
+  /* Bracket view mobile */
+  .bracket-section {
+    padding: 10px 5px 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bracket-tree {
+    min-width: 1000px;
+    padding: 15px 0;
+  }
+
+  .bracket-half {
+    gap: 15px;
+  }
+
+  .bracket-center {
+    min-width: 140px;
+    margin: 0 15px;
+  }
+
+  .round-label {
+    font-size: 10px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+  }
+
+  .matchup {
+    min-width: 85px;
+    padding: 6px;
+  }
+
+  .team {
+    font-size: 10px;
+    padding: 3px;
+    min-height: 24px;
+  }
+
+  .vs {
+    font-size: 8px;
+    margin: 1px 0;
+  }
+
+  .match-score {
+    font-size: 9px;
+    margin: 2px 0;
+  }
+
+  .penalty-notation {
+    font-size: 8px;
+  }
+
+  .final-matchup {
+    min-width: 140px;
+  }
+
+  .final-matchup .team {
+    font-size: 11px;
+    padding: 5px;
+  }
+
+  .champion-announcement {
+    margin-bottom: 15px;
+  }
+
+  .champion-effect {
+    padding: 12px;
+  }
+
+  .champion-effect h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .champion-name {
+    font-size: 22px;
+  }
+
+  .matches-section {
+    margin-top: 15px;
+  }
+
+  .matches-section h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .match-result {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .simulator-header h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .nav-btn, .view-btn, .reset-btn {
+    padding: 10px 12px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .content-container h2 {
+    font-size: 20px;
+  }
+
+  .instruction-text {
+    font-size: 13px;
+  }
+
+  .group-card {
+    padding: 12px;
+  }
+
+  .standings-header,
+  .standings-row {
+    font-size: 9px;
+    padding: 5px 3px;
+  }
+
+  .team-cell .team-name {
+    font-size: 9px;
+  }
+
+  .position-number {
+    font-size: 11px;
+    width: 16px;
+  }
+
+  .pot-badge {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .rank-number {
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .team-info .team-name {
+    font-size: 14px;
+  }
+
+  .stat-item {
     font-size: 10px;
   }
 }

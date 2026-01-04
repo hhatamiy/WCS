@@ -524,10 +524,18 @@ function SimulatorPage() {
       }
     };
 
+    const handleTouchOutside = (event) => {
+      if (openDropdown && !event.target.closest('.team-dropdown-container') && !event.target.closest('.team-dropdown-menu')) {
+        setOpenDropdown(null);
+      }
+    };
+
     if (openDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleTouchOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleTouchOutside);
       };
     }
   }, [openDropdown]);

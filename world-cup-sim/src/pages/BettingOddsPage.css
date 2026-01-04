@@ -683,56 +683,296 @@
 
   .odds-header {
     flex-direction: column;
-    gap: 20px;
-    text-align: center;
+    gap: 15px;
+    align-items: stretch;
+    text-align: left;
     padding: 20px;
   }
 
   .header-content h1 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+  }
+
+  .header-subtitle {
+    font-size: 1rem;
+  }
+
+  .back-btn {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    min-height: 44px;
+    width: 100%;
   }
 
   .odds-content {
-    padding: 25px 20px;
+    padding: 25px 15px;
   }
 
   .matchup-header {
     flex-direction: column;
-    gap: 25px;
-    padding: 30px 20px;
+    gap: 20px;
+    padding: 25px 15px;
+  }
+
+  .team-display {
+    text-align: center;
   }
 
   .team-name-large {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+  }
+
+  .fifa-ranking {
+    font-size: 0.9rem;
   }
 
   .vs-divider {
-    margin: 15px 0;
+    margin: 10px 0;
   }
 
   .vs-text {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .group-matchups-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 15px;
+  }
+
+  .matchup-card {
+    padding: 15px;
+  }
+
+  .matchup-teams-display {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .matchup-team-name {
+    font-size: 1rem;
+  }
+
+  .matchup-vs {
+    font-size: 1.1rem;
+    margin: 5px 0;
+  }
+
+  .matchup-bookmaker {
+    padding: 12px;
+  }
+
+  .matchup-bookmaker-name {
+    font-size: 0.9rem;
+  }
+
+  .matchup-outcome {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+
+  .outcome-label {
+    font-size: 0.9rem;
+  }
+
+  .matchup-probability {
+    font-size: 0.85rem;
+  }
+
+  .outcome-odds {
+    font-size: 0.95rem;
   }
 
   .bookmakers-list {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 15px;
+  }
+
+  .bookmaker-card {
+    padding: 20px 15px;
+  }
+
+  .bookmaker-name {
+    font-size: 1.3rem;
+  }
+
+  .market-title {
+    font-size: 1rem;
+  }
+
+  .outcome {
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .outcome-name {
+    font-size: 0.95rem;
+  }
+
+  .outcome-probability {
+    font-size: 0.85rem;
+  }
+
+  .outcome-price {
+    font-size: 1.1rem;
   }
 
   .section-title {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
+  }
+
+  .no-odds-icon {
+    font-size: 3rem;
   }
 
   .no-odds-title {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .no-odds-description {
+    font-size: 0.95rem;
+  }
+
+  .penalty-section {
+    margin-top: 12px;
+  }
+
+  .penalty-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .penalty-label {
+    font-size: 0.9rem;
+  }
+
+  .penalty-chance {
+    font-size: 0.85rem;
+  }
+
+  .loading-spinner {
+    padding: 40px 20px;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .betting-odds-container {
+    padding: 10px;
+  }
+
+  .odds-header {
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1.4rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .back-btn {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+
+  .odds-content {
+    padding: 20px 10px;
+  }
+
+  .matchup-header {
+    padding: 20px 12px;
+    gap: 15px;
+  }
+
+  .team-name-large {
+    font-size: 1.4rem;
+  }
+
+  .fifa-ranking {
+    font-size: 0.85rem;
+  }
+
+  .vs-text {
+    font-size: 1.2rem;
+  }
+
+  .matchup-card {
+    padding: 12px;
+  }
+
+  .matchup-team-name {
+    font-size: 0.95rem;
+  }
+
+  .matchup-vs {
     font-size: 1rem;
+  }
+
+  .matchup-outcome {
+    padding: 10px;
+  }
+
+  .outcome-label {
+    font-size: 0.85rem;
+  }
+
+  .matchup-probability {
+    font-size: 0.8rem;
+  }
+
+  .outcome-odds {
+    font-size: 0.9rem;
+  }
+
+  .bookmaker-card {
+    padding: 15px 12px;
+  }
+
+  .bookmaker-name {
+    font-size: 1.2rem;
+  }
+
+  .market-title {
+    font-size: 0.95rem;
+  }
+
+  .outcome {
+    padding: 10px;
+  }
+
+  .outcome-name {
+    font-size: 0.9rem;
+  }
+
+  .outcome-probability {
+    font-size: 0.8rem;
+  }
+
+  .outcome-price {
+    font-size: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+  }
+
+  .no-odds-icon {
+    font-size: 2.5rem;
+  }
+
+  .no-odds-title {
+    font-size: 1.3rem;
+  }
+
+  .no-odds-description {
+    font-size: 0.9rem;
   }
 }

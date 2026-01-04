@@ -224,6 +224,51 @@
   position: relative;
   isolation: isolate;
   overflow: visible;
+  /* Enable touch manipulation for drag */
+  touch-action: none;
+}
+
+.team-swap-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.group-team:hover .team-swap-controls {
+  opacity: 1;
+}
+
+.swap-btn {
+  width: 24px;
+  height: 20px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.swap-btn:hover:not(:disabled) {
+  background: rgba(0, 200, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.swap-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.swap-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .group-team::before {
@@ -332,6 +377,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
   pointer-events: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .team-dropdown-item {
@@ -563,6 +611,8 @@
   justify-content: center;
   min-height: 85px;
   overflow: hidden;
+  /* Enable tap without delay */
+  touch-action: manipulation;
 }
 
 .third-place-card::before {
@@ -779,6 +829,28 @@
 /* BRACKET STYLES */
 .bracket-section {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+  /* Allow horizontal scrolling on mobile */
+  touch-action: pan-x pan-y;
+}
+
+.bracket-section::-webkit-scrollbar {
+  height: 8px;
+}
+
+.bracket-section::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.bracket-section::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.5);
+  border-radius: 4px;
+}
+
+.bracket-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 200, 255, 0.7);
 }
 
 .champion-announcement {
@@ -1159,13 +1231,245 @@
   .predictor-header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 15px 20px;
   }
   
   .predictor-header h1 {
-    font-size: 24px;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .nav-btn, .view-btn, .reset-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    min-height: 44px;
   }
   
   .groups-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .group-card h3 {
+    font-size: 20px;
+  }
+
+  .group-team {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  /* Always show swap controls on mobile */
+  .team-swap-controls {
+    opacity: 1;
+  }
+
+  .swap-btn {
+    width: 28px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .team-name {
+    font-size: 14px;
+  }
+
+  .pot-badge, .group-winner-prob {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .content-container {
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+
+  .content-container h2 {
+    font-size: 24px;
+  }
+
+  .instruction-text {
+    font-size: 14px;
+  }
+
+  .advance-btn {
+    padding: 12px 30px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Third place grid - already has mobile styles but let's verify */
+  .third-place-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .third-place-card {
+    padding: 10px 12px;
+    min-height: 75px;
+  }
+
+  .third-place-card .team-name {
+    font-size: 13px;
+  }
+
+  .third-place-card .group-label {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .predictor-header h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .nav-btn, .view-btn, .reset-btn {
+    padding: 10px 12px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .content-container h2 {
+    font-size: 20px;
+  }
+
+  .instruction-text {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .group-card {
+    padding: 15px;
+  }
+
+  .group-team {
+    padding: 8px;
+  }
+
+  .team-name {
+    font-size: 13px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .position-number {
+    font-size: 16px;
+  }
+
+  .swap-btn {
+    width: 30px;
+    height: 24px;
+  }
+
+  /* Dropdown improvements */
+  .team-dropdown-toggle {
+    padding: 6px 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .team-dropdown-menu {
+    min-width: 180px;
+    max-width: calc(100vw - 40px);
+  }
+
+  .team-dropdown-item {
+    padding: 12px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* Bracket view mobile optimizations */
+  .bracket-section {
+    padding: 10px 5px 20px;
+  }
+
+  .bracket-tree {
+    min-width: 1000px;
+    padding: 15px 0;
+  }
+
+  .bracket-half {
+    gap: 15px;
+  }
+
+  .bracket-center {
+    min-width: 140px;
+    margin: 0 15px;
+  }
+
+  .round-label {
+    font-size: 10px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    white-space: nowrap;
+  }
+
+  .matchup {
+    min-width: 85px;
+    padding: 6px;
+  }
+
+  .team {
+    font-size: 10px;
+    padding: 3px;
+    min-height: 24px;
+  }
+
+  .vs {
+    font-size: 8px;
+    margin: 1px 0;
+  }
+
+  .final-matchup {
+    min-width: 140px;
+  }
+
+  .final-matchup .team {
+    font-size: 11px;
+    padding: 5px;
+  }
+
+  .champion-announcement {
+    margin-bottom: 15px;
+  }
+
+  .champion-effect {
+    padding: 12px;
+  }
+
+  .champion-effect h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .champion-name {
+    font-size: 22px;
+  }
+
+  .round-matchups-1,
+  .round-matchups-2,
+  .round-matchups-3,
+  .round-matchups-4 {
+    min-height: 1000px;
+  }
+
+  .third-place-matchup {
+    min-width: 120px;
   }
 }
