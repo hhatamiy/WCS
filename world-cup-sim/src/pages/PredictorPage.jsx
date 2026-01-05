@@ -749,9 +749,61 @@ function PredictorPage() {
     setCurrentView('bracket');
   };
 
+  // Clear all subsequent rounds that depend on a changed matchup
+  const clearSubsequentRounds = (newBracket, side, roundIndex, matchupIndex, clearCurrentWinner = false) => {
+    if (side === 'final') {
+      // Clear champion if final is affected
+      setChampion(null);
+      return;
+    }
+    
+    if (side === 'thirdPlacePlayoff') {
+      // Third place playoff doesn't have subsequent rounds
+      return;
+    }
+    
+    // Optionally clear the current matchup's winner (for deselection)
+    if (clearCurrentWinner) {
+      const currentMatchup = newBracket[side][roundIndex][matchupIndex];
+      currentMatchup.winner = null;
+    }
+    
+    const nextRoundIndex = roundIndex + 1;
+    
+    // If this is the semifinal, clear final and third place playoff
+    if (nextRoundIndex >= newBracket[side].length) {
+      const finalMatchup = newBracket.final[0];
+      const finalPosition = side === 'left' ? 'team1' : 'team2';
+      finalMatchup[finalPosition] = null;
+      finalMatchup.winner = null;
+      
+      if (newBracket.thirdPlacePlayoff) {
+        const thirdPlaceMatchup = newBracket.thirdPlacePlayoff[0];
+        const thirdPlacePosition = side === 'left' ? 'team1' : 'team2';
+        thirdPlaceMatchup[thirdPlacePosition] = null;
+        thirdPlaceMatchup.winner = null;
+      }
+      
+      setChampion(null);
+      return;
+    }
+    
+    // Clear the next round matchup that depends on this one
+    const nextMatchupIndex = Math.floor(matchupIndex / 2);
+    const nextMatchup = newBracket[side][nextRoundIndex][nextMatchupIndex];
+    const positionInNextMatchup = matchupIndex % 2 === 0 ? 'team1' : 'team2';
+    
+    // Clear the team in the next matchup
+    nextMatchup[positionInNextMatchup] = null;
+    nextMatchup.winner = null;
+    
+    // Recursively clear subsequent rounds
+    clearSubsequentRounds(newBracket, side, nextRoundIndex, nextMatchupIndex, false);
+  };
+
   // Bracket team click handler (from previous implementation)
   const handleBracketTeamClick = (side, roundIndex, matchupIndex, teamPosition) => {
-    if (champion || !knockoutBracket) return;
+    if (!knockoutBracket) return;
 
     const newBracket = {
       left: knockoutBracket.left.map(round => round.map(matchup => ({ ...matchup }))),
@@ -770,24 +822,56 @@ function PredictorPage() {
     }
 
     const selectedTeam = matchup[teamPosition];
+    const currentWinner = matchup.winner;
 
+    // Safety check: if selectedTeam is null, don't do anything
+    if (!selectedTeam) return;
+
+    // Handle final
     if (side === 'final') {
       if (matchup.team1 && matchup.team2) {
-        matchup.winner = selectedTeam;
-        setChampion(selectedTeam);
+        if (currentWinner === selectedTeam) {
+          // Deselect: clicking the current winner
+          matchup.winner = null;
+          setChampion(null);
+        } else {
+          // Swap or set winner
+          matchup.winner = selectedTeam;
+          setChampion(selectedTeam);
+        }
       }
-    } else if (side === 'thirdPlacePlayoff') {
+      setKnockoutBracket(newBracket);
+      return;
+    }
+
+    // Handle third place playoff
+    if (side === 'thirdPlacePlayoff') {
       if (matchup.team1 && matchup.team2) {
-        matchup.winner = selectedTeam;
+        if (currentWinner === selectedTeam) {
+          // Deselect: clicking the current winner
+          matchup.winner = null;
+        } else {
+          // Swap or set winner
+          matchup.winner = selectedTeam;
+        }
       }
-    } else if (roundIndex === 0) {
-      matchup.winner = selectedTeam;
-      advanceTeamInBracket(newBracket, side, roundIndex, matchupIndex, selectedTeam);
+      setKnockoutBracket(newBracket);
+      return;
+    }
+
+    // Handle knockout rounds (Round of 32, 16, Quarterfinals, Semifinals)
+    if (currentWinner === selectedTeam) {
+      // Deselect: clicking the current winner
+      clearSubsequentRounds(newBracket, side, roundIndex, matchupIndex, true);
     } else {
-      if (matchup.team1 && matchup.team2) {
-        matchup.winner = selectedTeam;
-        advanceTeamInBracket(newBracket, side, roundIndex, matchupIndex, selectedTeam);
-      }
+      // Swap or set winner
+      matchup.winner = selectedTeam;
+      
+      // Clear subsequent rounds first (but don't clear current winner since we just set it)
+      clearSubsequentRounds(newBracket, side, roundIndex, matchupIndex, false);
+      
+      // Then advance the new winner
+      advanceTeamInBracket(newBracket, side, roundIndex, matchupIndex, selectedTeam);
     }
 
     setKnockoutBracket(newBracket);
@@ -804,12 +888,10 @@ function PredictorPage() {
       const isWinner = matchup.winner === team;
       
       if (isWinner) {
-        // Winner goes to final
+        // Winner goes to final (update even if already set)
         const finalMatchup = newBracket.final[0];
         const finalPosition = side === 'left' ? 'team1' : 'team2';
-        if (!finalMatchup[finalPosition]) {
-          finalMatchup[finalPosition] = team;
-        }
+        finalMatchup[finalPosition] = team;
         
         // Loser goes to third place playoff
         const losingTeam = matchup.team1 === team ? matchup.team2 : matchup.team1;
@@ -819,9 +901,7 @@ function PredictorPage() {
           }
           const thirdPlaceMatchup = newBracket.thirdPlacePlayoff[0];
           const thirdPlacePosition = side === 'left' ? 'team1' : 'team2';
-          if (!thirdPlaceMatchup[thirdPlacePosition]) {
-            thirdPlaceMatchup[thirdPlacePosition] = losingTeam;
-          }
+          thirdPlaceMatchup[thirdPlacePosition] = losingTeam;
         }
       }
     } else {
@@ -829,14 +909,13 @@ function PredictorPage() {
       const nextMatchup = newBracket[side][nextRoundIndex][nextMatchupIndex];
       const positionInNextMatchup = currentMatchupIndex % 2 === 0 ? 'team1' : 'team2';
       
-      if (!nextMatchup[positionInNextMatchup]) {
-        nextMatchup[positionInNextMatchup] = team;
-      }
+      // Update the team in the next matchup (replace if already set)
+      nextMatchup[positionInNextMatchup] = team;
     }
   };
 
   const isBracketTeamClickable = (side, roundIndex, matchupIndex) => {
-    if (champion || !knockoutBracket) return false;
+    if (!knockoutBracket) return false;
     
     let matchup;
     if (side === 'final') {
@@ -848,12 +927,15 @@ function PredictorPage() {
       matchup = knockoutBracket[side][roundIndex][matchupIndex];
     }
     
+    // Allow clicking when both teams exist, even if winner is already set
     if (side === 'final' || side === 'thirdPlacePlayoff') {
-      return matchup.team1 && matchup.team2 && matchup.winner === null;
+      return matchup.team1 && matchup.team2;
     } else if (roundIndex === 0) {
-      return matchup.winner === null;
+      // Round of 32: allow clicking if team exists
+      return matchup.team1 || matchup.team2;
     } else {
-      return matchup.team1 && matchup.team2 && matchup.winner === null;
+      // Other rounds: allow clicking if both teams exist
+      return matchup.team1 && matchup.team2;
     }
   };
 
@@ -1233,9 +1315,7 @@ function PredictorPage() {
                       <div
                         className={`team ${!matchup.team1 ? 'empty' : ''} ${
                           isBracketTeamClickable('final', 0, matchupIndex) ? 'clickable' : ''
-                        } ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''} ${
-                          champion === matchup.team1 ? 'champion' : ''
-                        }`}
+                        } ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isBracketTeamClickable('final', 0, matchupIndex)) {
@@ -1249,9 +1329,7 @@ function PredictorPage() {
                       <div
                         className={`team ${!matchup.team2 ? 'empty' : ''} ${
                           isBracketTeamClickable('final', 0, matchupIndex) ? 'clickable' : ''
-                        } ${matchup.winner === matchup.team2 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team1 ? 'wait' : ''} ${
-                          champion === matchup.team2 ? 'champion' : ''
-                        }`}
+                        } ${matchup.winner === matchup.team2 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team1 ? 'wait' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isBracketTeamClickable('final', 0, matchupIndex)) {
