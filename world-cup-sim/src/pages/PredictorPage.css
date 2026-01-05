@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #0a1a2a, #003b5c);
   color: white;
-  padding-bottom: 40px;
+  padding-bottom: 60px;
 }
 
 .predictor-header {
@@ -830,7 +830,7 @@
 .bracket-section {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 20px;
+  padding-bottom: 60px;
   /* Allow horizontal scrolling on mobile */
   touch-action: pan-x pan-y;
 }
@@ -1396,7 +1396,7 @@
 
   /* Bracket view mobile optimizations */
   .bracket-section {
-    padding: 10px 5px 20px;
+    padding: 10px 5px 60px;
   }
 
   .bracket-tree {

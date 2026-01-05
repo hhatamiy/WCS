@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #0a1a2a, #003b5c);
   color: white;
-  padding-bottom: 40px;
+  padding-bottom: 60px;
 }
 
 .simulator-header {
@@ -577,6 +577,9 @@
 /* BRACKET STYLES */
 .bracket-section {
   overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 60px;
+  /* Prevent vertical scrollbar on bracket section - let page handle vertical scrolling */
 }
 
 .champion-announcement {
@@ -794,7 +797,7 @@
 
 .team.champion {
   background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #0a1a2a;
+  color: white;
   border-color: #ffd700;
   font-weight: 700;
   font-size: 13px;
@@ -1001,7 +1004,7 @@
 
   /* Bracket view mobile */
   .bracket-section {
-    padding: 10px 5px 20px;
+    padding: 10px 5px 60px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
