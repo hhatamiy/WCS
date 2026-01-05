@@ -1327,16 +1327,6 @@ function SimulatorPage() {
           <div className="bracket-section">
             <h2>Knockout Stage</h2>
             
-            <div className="action-section">
-              <button 
-                onClick={simulateKnockoutStage} 
-                className="simulate-btn"
-                disabled={simulating || simulatedKnockout}
-              >
-                {simulating ? 'Simulating...' : simulatedKnockout ? 'Knockout Stage Simulated' : 'Simulate Knockout Stage'}
-              </button>
-            </div>
-            
             {champion && (
               <div className="champion-announcement">
                 <div className="champion-effect">
@@ -1396,6 +1386,15 @@ function SimulatorPage() {
 
               {/* Final (Center) */}
               <div className="bracket-center">
+                <div className="simulate-knockout-button" style={{ marginBottom: '15px' }}>
+                  <button 
+                    onClick={simulateKnockoutStage} 
+                    className="simulate-btn"
+                    disabled={simulating || simulatedKnockout}
+                  >
+                    {simulating ? 'Simulating...' : simulatedKnockout ? 'Knockout Stage Simulated' : 'Simulate Knockout Stage'}
+                  </button>
+                </div>
                 <div className="round-label">Final</div>
                 {knockoutBracket.final.map((matchup, matchupIndex) => (
                   <div key={matchupIndex} className="matchup-wrapper final-wrapper">
