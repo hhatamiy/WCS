@@ -1326,15 +1326,6 @@ function SimulatorPage() {
         {currentView === 'bracket' && knockoutBracket && (
           <div className="bracket-section">
             <h2>Knockout Stage</h2>
-            
-            {champion && (
-              <div className="champion-announcement">
-                <div className="champion-effect">
-                  <h2>🏆 CHAMPION 🏆</h2>
-                  <div className="champion-name">{getFullCountryName(champion)}</div>
-                </div>
-              </div>
-            )}
 
             <div className="bracket-tree">
               {/* Left Half */}
@@ -1386,6 +1377,16 @@ function SimulatorPage() {
 
               {/* Final (Center) */}
               <div className="bracket-center">
+                <div className="champion-announcement-wrapper" style={{ minHeight: champion ? 'auto' : '0px', marginBottom: champion ? '15px' : '0px' }}>
+                  {champion && (
+                    <div className="champion-announcement">
+                      <div className="champion-effect">
+                        <h2>🏆 CHAMPION 🏆</h2>
+                        <div className="champion-name">{getFullCountryName(champion)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="simulate-knockout-button" style={{ marginBottom: '15px' }}>
                   <button 
                     onClick={simulateKnockoutStage} 

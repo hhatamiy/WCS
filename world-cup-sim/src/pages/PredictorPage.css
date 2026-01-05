@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #0a1a2a, #003b5c);
   color: white;
-  padding-bottom: 60px;
+  padding-bottom: 100px;
 }
 
 .predictor-header {
@@ -830,7 +830,7 @@
 .bracket-section {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 60px;
+  padding-bottom: 100px;
   /* Allow horizontal scrolling on mobile */
   touch-action: pan-x pan-y;
 }
@@ -855,7 +855,7 @@
 
 .champion-announcement {
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 0;
   animation: fadeIn 0.5s ease-in;
 }
 
@@ -1396,7 +1396,7 @@
 
   /* Bracket view mobile optimizations */
   .bracket-section {
-    padding: 10px 5px 60px;
+    padding: 10px 5px 100px;
   }
 
   .bracket-tree {
@@ -1446,7 +1446,7 @@
   }
 
   .champion-announcement {
-    margin-bottom: 15px;
+    margin-bottom: 0;
   }
 
   .champion-effect {
