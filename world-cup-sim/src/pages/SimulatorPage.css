@@ -578,7 +578,7 @@
 .bracket-section {
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 100px;
+  padding-bottom: 60px;
   /* Prevent vertical scrollbar on bracket section - let page handle vertical scrolling */
 }
 
@@ -675,6 +675,7 @@
   position: relative;
   align-items: center;
   align-self: flex-start;
+  min-width: 100px;
 }
 
 .round-label {
@@ -1004,7 +1005,7 @@
 
   /* Bracket view mobile */
   .bracket-section {
-    padding: 10px 5px 100px;
+    padding: 10px 5px 60px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
