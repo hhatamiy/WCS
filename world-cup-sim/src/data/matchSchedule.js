@@ -25,6 +25,26 @@ const VENUES = {
   'Kansas City Stadium': { name: 'Arrowhead Stadium', city: 'Kansas City' }
 };
 
+// Reverse mapping from CSV stadium names to venue objects
+const STADIUM_TO_VENUE = {
+  'SoFi Stadium': VENUES['Los Angeles Stadium'],
+  'Gillette Stadium': VENUES['Boston Stadium'],
+  'Estadio BBVA': VENUES['Monterrey Stadium'],
+  'NRG Stadium': VENUES['Houston Stadium'],
+  'MetLife Stadium': VENUES['New York/New Jersey Stadium'],
+  'AT&T Stadium': VENUES['Dallas Stadium'],
+  'Estadio Azteca': VENUES['Mexico City Stadium'],
+  'Mercedes-Benz Stadium': VENUES['Atlanta Stadium'],
+  'Levi\'s Stadium': VENUES['San Francisco Bay Area Stadium'],
+  'Lumen Field': VENUES['Seattle Stadium'],
+  'BMO Field': VENUES['Toronto Stadium'],
+  'BC Place': VENUES['BC Place Vancouver'],
+  'Hard Rock Stadium': VENUES['Miami Stadium'],
+  'Arrowhead Stadium': VENUES['Kansas City Stadium'],
+  'Lincoln Financial Field': VENUES['Philadelphia Stadium'],
+  'Estadio Akron': VENUES['Guadalajara Stadium']
+};
+
 /**
  * Complete Match Schedule (Matches 1-104)
  * Data from matchSchedule.csv (updated version)
@@ -105,48 +125,48 @@ const ALL_MATCHES = {
   72: { matchId: 72, date: '2026-06-27', kickoffTime: '19:30', venue: VENUES['Atlanta Stadium'], stage: 'Group K', teamA: 'IC Path 1 winner', teamB: 'Uzbekistan', timezone: 'ET' },
   
   // Round of 32 (Matches 73-88)
-  73: { matchId: 73, date: '2026-06-28', kickoffTime: '12:00', venue: VENUES['Los Angeles Stadium'], stage: 'Round of 32', teamA: '2A', teamB: '2B', timezone: 'PT' },
-  74: { matchId: 74, date: '2026-06-29', kickoffTime: '12:00', venue: VENUES['Houston Stadium'], stage: 'Round of 32', teamA: '1C', teamB: '2F', timezone: 'CT' },
-  75: { matchId: 75, date: '2026-06-29', kickoffTime: '16:30', venue: VENUES['Boston Stadium'], stage: 'Round of 32', teamA: '1E', teamB: '3ABCDF', timezone: 'ET' },
-  76: { matchId: 76, date: '2026-06-29', kickoffTime: '18:00', venue: VENUES['Monterrey Stadium'], stage: 'Round of 32', teamA: '1F', teamB: '2C', timezone: 'CT' },
-  77: { matchId: 77, date: '2026-06-30', kickoffTime: '12:00', venue: VENUES['Dallas Stadium'], stage: 'Round of 32', teamA: '2E', teamB: '2I', timezone: 'CT' },
-  78: { matchId: 78, date: '2026-06-30', kickoffTime: '17:00', venue: VENUES['New York/New Jersey Stadium'], stage: 'Round of 32', teamA: '1I', teamB: '3CDFGH', timezone: 'ET' },
-  79: { matchId: 79, date: '2026-06-30', kickoffTime: '20:00', venue: VENUES['Mexico City Stadium'], stage: 'Round of 32', teamA: '1A', teamB: '3CEFHI', timezone: 'CT' },
-  80: { matchId: 80, date: '2026-07-01', kickoffTime: '12:00', venue: VENUES['Atlanta Stadium'], stage: 'Round of 32', teamA: '1L', teamB: '3EHIJK', timezone: 'ET' },
-  81: { matchId: 81, date: '2026-07-01', kickoffTime: '13:00', venue: VENUES['Seattle Stadium'], stage: 'Round of 32', teamA: '1G', teamB: '3AEHIJ', timezone: 'PT' },
-  82: { matchId: 82, date: '2026-07-01', kickoffTime: '17:00', venue: VENUES['San Francisco Bay Area Stadium'], stage: 'Round of 32', teamA: '1D', teamB: '3BEFIJ', timezone: 'PT' },
-  83: { matchId: 83, date: '2026-07-02', kickoffTime: '12:00', venue: VENUES['Los Angeles Stadium'], stage: 'Round of 32', teamA: '1H', teamB: '2J', timezone: 'PT' },
-  84: { matchId: 84, date: '2026-07-02', kickoffTime: '19:00', venue: VENUES['Toronto Stadium'], stage: 'Round of 32', teamA: '2K', teamB: '2L', timezone: 'ET' },
-  85: { matchId: 85, date: '2026-07-02', kickoffTime: '20:00', venue: VENUES['BC Place Vancouver'], stage: 'Round of 32', teamA: '1B', teamB: '3EFGIJ', timezone: 'PT' },
-  86: { matchId: 86, date: '2026-07-03', kickoffTime: '13:00', venue: VENUES['Dallas Stadium'], stage: 'Round of 32', teamA: '2D', teamB: '2G', timezone: 'CT' },
-  87: { matchId: 87, date: '2026-07-03', kickoffTime: '18:00', venue: VENUES['Miami Stadium'], stage: 'Round of 32', teamA: '1J', teamB: '2H', timezone: 'ET' },
-  88: { matchId: 88, date: '2026-07-03', kickoffTime: '20:30', venue: VENUES['Kansas City Stadium'], stage: 'Round of 32', teamA: '1K', teamB: '3DEIJL', timezone: 'CT' },
+  73: { matchId: 73, date: '2026-06-28', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['SoFi Stadium'], stage: 'Round of 32', teamA: 'Runner-up Group A', teamB: 'Runner-up Group B', timezone: 'PT' },
+  74: { matchId: 74, date: '2026-06-29', kickoffTime: '16:30', venue: STADIUM_TO_VENUE['Gillette Stadium'], stage: 'Round of 32', teamA: 'Winner Group E', teamB: '3rd Group A/B/C/D/F', timezone: 'ET' },
+  75: { matchId: 75, date: '2026-06-29', kickoffTime: '19:00', venue: STADIUM_TO_VENUE['Estadio BBVA'], stage: 'Round of 32', teamA: 'Winner Group F', teamB: 'Runner-up Group C', timezone: 'CT' },
+  76: { matchId: 76, date: '2026-06-29', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['NRG Stadium'], stage: 'Round of 32', teamA: 'Winner Group C', teamB: 'Runner-up Group F', timezone: 'ET' },
+  77: { matchId: 77, date: '2026-06-30', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['MetLife Stadium'], stage: 'Round of 32', teamA: 'Winner Group I', teamB: '3rd Group C/D/F/G/H', timezone: 'ET' },
+  78: { matchId: 78, date: '2026-06-30', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['AT&T Stadium'], stage: 'Round of 32', teamA: 'Runner-up Group E', teamB: 'Runner-up Group I', timezone: 'CT' },
+  79: { matchId: 79, date: '2026-06-30', kickoffTime: '19:00', venue: STADIUM_TO_VENUE['Estadio Azteca'], stage: 'Round of 32', teamA: 'Winner Group A', teamB: '3rd Group C/E/F/H/I', timezone: 'CT' },
+  80: { matchId: 80, date: '2026-07-01', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['Mercedes-Benz Stadium'], stage: 'Round of 32', teamA: 'Winner Group L', teamB: '3rd Group E/H/I/J/K', timezone: 'ET' },
+  81: { matchId: 81, date: '2026-07-01', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['Levi\'s Stadium'], stage: 'Round of 32', teamA: 'Winner Group D', teamB: '3rd Group B/E/F/I/J', timezone: 'PT' },
+  82: { matchId: 82, date: '2026-07-01', kickoffTime: '13:00', venue: STADIUM_TO_VENUE['Lumen Field'], stage: 'Round of 32', teamA: 'Winner Group G', teamB: '3rd Group A/E/H/I/J', timezone: 'PT' },
+  83: { matchId: 83, date: '2026-07-02', kickoffTime: '19:00', venue: STADIUM_TO_VENUE['BMO Field'], stage: 'Round of 32', teamA: 'Runner-up Group K', teamB: 'Runner-up Group L', timezone: 'ET' },
+  84: { matchId: 84, date: '2026-07-02', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['SoFi Stadium'], stage: 'Round of 32', teamA: 'Winner Group H', teamB: 'Runner-up Group J', timezone: 'PT' },
+  85: { matchId: 85, date: '2026-07-02', kickoffTime: '20:00', venue: STADIUM_TO_VENUE['BC Place'], stage: 'Round of 32', teamA: 'Winner Group B', teamB: '3rd Group E/F/G/I/J', timezone: 'PT' },
+  86: { matchId: 86, date: '2026-07-03', kickoffTime: '18:00', venue: STADIUM_TO_VENUE['Hard Rock Stadium'], stage: 'Round of 32', teamA: 'Winner Group J', teamB: 'Runner-up Group H', timezone: 'ET' },
+  87: { matchId: 87, date: '2026-07-03', kickoffTime: '20:30', venue: STADIUM_TO_VENUE['Arrowhead Stadium'], stage: 'Round of 32', teamA: 'Winner Group K', teamB: '3rd Group D/E/I/J/L', timezone: 'CT' },
+  88: { matchId: 88, date: '2026-07-03', kickoffTime: '13:00', venue: STADIUM_TO_VENUE['AT&T Stadium'], stage: 'Round of 32', teamA: 'Runner-up Group D', teamB: 'Runner-up Group G', timezone: 'CT' },
   
   // Round of 16 (Matches 89-96)
-  89: { matchId: 89, date: '2026-07-04', kickoffTime: '12:00', venue: VENUES['Houston Stadium'], stage: 'Round of 16', teamA: 'W73', teamB: 'W75', timezone: 'CT' },
-  90: { matchId: 90, date: '2026-07-04', kickoffTime: '17:00', venue: VENUES['Philadelphia Stadium'], stage: 'Round of 16', teamA: 'W74', teamB: 'W77', timezone: 'ET' },
-  91: { matchId: 91, date: '2026-07-05', kickoffTime: '16:00', venue: VENUES['New York/New Jersey Stadium'], stage: 'Round of 16', teamA: 'W76', teamB: 'W78', timezone: 'ET' },
-  92: { matchId: 92, date: '2026-07-05', kickoffTime: '19:00', venue: VENUES['Mexico City Stadium'], stage: 'Round of 16', teamA: 'W79', teamB: 'W80', timezone: 'CT' },
-  93: { matchId: 93, date: '2026-07-06', kickoffTime: '14:00', venue: VENUES['Dallas Stadium'], stage: 'Round of 16', teamA: 'W83', teamB: 'W84', timezone: 'CT' },
-  94: { matchId: 94, date: '2026-07-06', kickoffTime: '17:00', venue: VENUES['Seattle Stadium'], stage: 'Round of 16', teamA: 'W81', teamB: 'W82', timezone: 'PT' },
-  95: { matchId: 95, date: '2026-07-07', kickoffTime: '12:00', venue: VENUES['Atlanta Stadium'], stage: 'Round of 16', teamA: 'W86', teamB: 'W88', timezone: 'ET' },
-  96: { matchId: 96, date: '2026-07-07', kickoffTime: '13:00', venue: VENUES['BC Place Vancouver'], stage: 'Round of 16', teamA: 'W85', teamB: 'W87', timezone: 'PT' },
+  89: { matchId: 89, date: '2026-07-04', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['Lincoln Financial Field'], stage: 'Round of 16', teamA: 'Winner Match 74', teamB: 'Winner Match 77', timezone: 'ET' },
+  90: { matchId: 90, date: '2026-07-04', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['NRG Stadium'], stage: 'Round of 16', teamA: 'Winner Match 73', teamB: 'Winner Match 75', timezone: 'CT' },
+  91: { matchId: 91, date: '2026-07-05', kickoffTime: '16:00', venue: STADIUM_TO_VENUE['MetLife Stadium'], stage: 'Round of 16', teamA: 'Winner Match 76', teamB: 'Winner Match 78', timezone: 'ET' },
+  92: { matchId: 92, date: '2026-07-05', kickoffTime: '18:00', venue: STADIUM_TO_VENUE['Estadio Azteca'], stage: 'Round of 16', teamA: 'Winner Match 79', teamB: 'Winner Match 80', timezone: 'CT' },
+  93: { matchId: 93, date: '2026-07-06', kickoffTime: '14:00', venue: STADIUM_TO_VENUE['AT&T Stadium'], stage: 'Round of 16', teamA: 'Winner Match 83', teamB: 'Winner Match 84', timezone: 'CT' },
+  94: { matchId: 94, date: '2026-07-06', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['Lumen Field'], stage: 'Round of 16', teamA: 'Winner Match 81', teamB: 'Winner Match 82', timezone: 'PT' },
+  95: { matchId: 95, date: '2026-07-07', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['Mercedes-Benz Stadium'], stage: 'Round of 16', teamA: 'Winner Match 86', teamB: 'Winner Match 88', timezone: 'ET' },
+  96: { matchId: 96, date: '2026-07-07', kickoffTime: '13:00', venue: STADIUM_TO_VENUE['BC Place'], stage: 'Round of 16', teamA: 'Winner Match 85', teamB: 'Winner Match 87', timezone: 'PT' },
   
   // Quarter-finals (Matches 97-100)
-  97: { matchId: 97, date: '2026-07-09', kickoffTime: '16:00', venue: VENUES['Boston Stadium'], stage: 'Quarter-final', teamA: 'W89', teamB: 'W90', timezone: 'ET' },
-  98: { matchId: 98, date: '2026-07-10', kickoffTime: '12:00', venue: VENUES['Los Angeles Stadium'], stage: 'Quarter-final', teamA: 'W93', teamB: 'W94', timezone: 'PT' },
-  99: { matchId: 99, date: '2026-07-11', kickoffTime: '17:00', venue: VENUES['Miami Stadium'], stage: 'Quarter-final', teamA: 'W91', teamB: 'W92', timezone: 'ET' },
-  100: { matchId: 100, date: '2026-07-11', kickoffTime: '20:00', venue: VENUES['Kansas City Stadium'], stage: 'Quarter-final', teamA: 'W95', teamB: 'W96', timezone: 'CT' },
+  97: { matchId: 97, date: '2026-07-09', kickoffTime: '16:00', venue: STADIUM_TO_VENUE['Gillette Stadium'], stage: 'Quarterfinals', teamA: 'Winner Match 89', teamB: 'Winner Match 90', timezone: 'ET' },
+  98: { matchId: 98, date: '2026-07-10', kickoffTime: '12:00', venue: STADIUM_TO_VENUE['SoFi Stadium'], stage: 'Quarterfinals', teamA: 'Winner Match 93', teamB: 'Winner Match 94', timezone: 'PT' },
+  99: { matchId: 99, date: '2026-07-11', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['Hard Rock Stadium'], stage: 'Quarterfinals', teamA: 'Winner Match 91', teamB: 'Winner Match 92', timezone: 'ET' },
+  100: { matchId: 100, date: '2026-07-11', kickoffTime: '20:00', venue: STADIUM_TO_VENUE['Arrowhead Stadium'], stage: 'Quarterfinals', teamA: 'Winner Match 95', teamB: 'Winner Match 96', timezone: 'CT' },
   
   // Semi-finals (Matches 101-102)
-  101: { matchId: 101, date: '2026-07-14', kickoffTime: '14:00', venue: VENUES['Dallas Stadium'], stage: 'Semi-final', teamA: 'W97', teamB: 'W98', timezone: 'CT' },
-  102: { matchId: 102, date: '2026-07-15', kickoffTime: '12:00', venue: VENUES['Atlanta Stadium'], stage: 'Semi-final', teamA: 'W99', teamB: 'W100', timezone: 'ET' },
+  101: { matchId: 101, date: '2026-07-14', kickoffTime: '14:00', venue: STADIUM_TO_VENUE['AT&T Stadium'], stage: 'Semifinals', teamA: 'Winner Match 97', teamB: 'Winner Match 98', timezone: 'CT' },
+  102: { matchId: 102, date: '2026-07-15', kickoffTime: '15:00', venue: STADIUM_TO_VENUE['Mercedes-Benz Stadium'], stage: 'Semifinals', teamA: 'Winner Match 99', teamB: 'Winner Match 100', timezone: 'ET' },
   
   // Third Place Playoff (Match 103)
-  103: { matchId: 103, date: '2026-07-18', kickoffTime: '17:00', venue: VENUES['Miami Stadium'], stage: 'Third Place Playoff', teamA: 'RU101', teamB: 'RU102', timezone: 'ET' },
+  103: { matchId: 103, date: '2026-07-18', kickoffTime: '17:00', venue: STADIUM_TO_VENUE['Hard Rock Stadium'], stage: 'Third Place Playoff', teamA: 'Loser Match 101', teamB: 'Loser Match 102', timezone: 'ET' },
   
   // Final (Match 104)
-  104: { matchId: 104, date: '2026-07-19', kickoffTime: '15:00', venue: VENUES['New York/New Jersey Stadium'], stage: 'Final', teamA: 'W101', teamB: 'W102', timezone: 'ET' }
+  104: { matchId: 104, date: '2026-07-19', kickoffTime: '15:00', venue: VENUES['New York/New Jersey Stadium'], stage: 'Final', teamA: 'Winner Match 101', teamB: 'Winner Match 102', timezone: 'ET' }
 };
 
 /**
@@ -267,8 +287,22 @@ export function getKnockoutMatchInfoById(matchId) {
  * @returns {Object} Match info with date, kickoffTime, and venue
  */
 export function getKnockoutMatchInfo(stage, matchIndex = 0) {
+  // Normalize stage name for matching
+  const stageMap = {
+    'Quarter-finals': 'Quarterfinals',
+    'Quarter-final': 'Quarterfinals',
+    'Quarter Finals': 'Quarterfinals',
+    'Semi-finals': 'Semifinals',
+    'Semi-final': 'Semifinals',
+    'Semi Finals': 'Semifinals',
+    'Third Place': 'Third Place Playoff',
+    'Third Place Playoff': 'Third Place Playoff'
+  };
+  
+  const normalizedStage = stageMap[stage] || stage;
+  
   // Try to find a match in the specified stage
-  const matchesInStage = Object.values(ALL_MATCHES).filter(m => m.stage === stage);
+  const matchesInStage = Object.values(ALL_MATCHES).filter(m => m.stage === normalizedStage);
   
   if (matchesInStage.length > 0 && matchIndex < matchesInStage.length) {
     const match = matchesInStage[matchIndex];

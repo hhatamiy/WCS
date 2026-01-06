@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { generateRoundOf32Matchups } from '../utils/knockoutAlgorithm';
 import api from '../api/api';
-import { getGroupMatchInfo, getKnockoutMatchInfo } from '../data/matchSchedule';
+import { getGroupMatchInfo, getKnockoutMatchInfo, getKnockoutMatchInfoById } from '../data/matchSchedule';
 import './PredictorPage.css';
 
 // Team alternatives mapping for unqualified teams
@@ -354,6 +354,12 @@ function PredictorPage() {
   const [touchStartPos, setTouchStartPos] = useState(null);
   const [touchedTeam, setTouchedTeam] = useState(null);
   const [selectedMatchInfo, setSelectedMatchInfo] = useState(null); // For match info modal
+
+  // Helper function to parse date string correctly (avoid UTC timezone issues)
+  const parseDateString = (dateString) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
+  };
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -1025,39 +1031,35 @@ function PredictorPage() {
     });
   };
 
-  // Navigate to betting odds page for a knockout matchup
-  const handleMatchupClick = (side, roundIndex, matchupIndex) => {
-    if (!knockoutBracket) return;
-    
-    let matchup;
+  // Get match ID based on bracket position
+  const getMatchIdFromBracketPosition = (side, roundIndex, matchupIndex) => {
     if (side === 'final') {
-      matchup = knockoutBracket.final[matchupIndex];
+      return 104; // Final is match 104
     } else if (side === 'thirdPlacePlayoff') {
-      matchup = knockoutBracket.thirdPlacePlayoff ? knockoutBracket.thirdPlacePlayoff[matchupIndex] : null;
-      if (!matchup) return;
-    } else {
-      matchup = knockoutBracket[side][roundIndex][matchupIndex];
+      return 103; // Third Place is match 103
     }
-
-    if (matchup.team1 && matchup.team2) {
-      const roundNames = {
-        0: 'Round of 32',
-        1: 'Round of 16',
-        2: 'Quarterfinals',
-        3: 'Semifinals',
-      };
-      
-      navigate('/betting-odds', {
-        state: {
-          team1: matchup.team1,
-          team2: matchup.team2,
-          type: 'matchup',
-          round: side === 'thirdPlacePlayoff' ? 'Third Place Playoff' : (roundNames[roundIndex] || 'Final'),
-          returnPath: '/predictor',
-          returnView: 'bracket',
-        },
-      });
-    }
+    
+    // Round of 32: left (73-80), right (81-88)
+    // Round of 16: left (89-92), right (93-96)
+    // Quarterfinals: left (97-98), right (99-100)
+    // Semifinals: left (101), right (102)
+    
+    const matchIdMap = {
+      'left': {
+        0: 73 + matchupIndex,      // Round of 32: 73-80
+        1: 89 + matchupIndex,      // Round of 16: 89-92
+        2: 97 + matchupIndex,      // Quarterfinals: 97-98
+        3: 101                     // Semifinals: 101
+      },
+      'right': {
+        0: 81 + matchupIndex,      // Round of 32: 81-88
+        1: 93 + matchupIndex,      // Round of 16: 93-96
+        2: 99 + matchupIndex,      // Quarterfinals: 99-100
+        3: 102                     // Semifinals: 102
+      }
+    };
+    
+    return matchIdMap[side]?.[roundIndex] || null;
   };
 
   // Show match info for a knockout matchup
@@ -1074,31 +1076,34 @@ function PredictorPage() {
       matchup = knockoutBracket[side][roundIndex][matchupIndex];
     }
 
-    if (matchup && matchup.team1 && matchup.team2) {
-      const roundNames = {
-        0: 'Round of 32',
-        1: 'Round of 16',
-        2: 'Quarterfinals',
-        3: 'Semifinals',
-      };
-      
-      const stageName = side === 'final' ? 'Final' : 
-                       side === 'thirdPlacePlayoff' ? 'Third Place' : 
-                       roundNames[roundIndex] || 'Round of 32';
-      
-      // Get match info from schedule
-      const matchInfo = getKnockoutMatchInfo(stageName);
-      
-      setSelectedMatchInfo({
-        team1: matchup.team1,
-        team2: matchup.team2,
-        winner: matchup.winner,
-        venue: matchInfo.venue,
-        date: matchInfo.date,
-        kickoffTime: matchInfo.kickoffTime,
-        stage: stageName
-      });
-    }
+    const roundNames = {
+      0: 'Round of 32',
+      1: 'Round of 16',
+      2: 'Quarterfinals',
+      3: 'Semifinals',
+    };
+    
+    const stageName = side === 'final' ? 'Final' : 
+                     side === 'thirdPlacePlayoff' ? 'Third Place' : 
+                     roundNames[roundIndex] || 'Round of 32';
+    
+    // Get match info from schedule using match ID
+    const matchId = getMatchIdFromBracketPosition(side, roundIndex, matchupIndex);
+    const matchInfo = matchId ? getKnockoutMatchInfoById(matchId) : getKnockoutMatchInfo(stageName, matchupIndex);
+    
+    // Show match info even if teams aren't set yet
+    setSelectedMatchInfo({
+      team1: matchup?.team1 || null,
+      team2: matchup?.team2 || null,
+      winner: matchup?.winner || null,
+      venue: matchInfo.venue,
+      date: matchInfo.date,
+      kickoffTime: matchInfo.kickoffTime,
+      timezone: matchInfo.timezone || null,
+      stage: stageName,
+      matchId: matchInfo.matchId,
+      description: matchInfo.description
+    });
   };
 
 
@@ -1112,6 +1117,12 @@ function PredictorPage() {
             className="nav-btn"
           >
             Simulator
+          </button>
+          <button
+            onClick={() => navigate('/fixtures')}
+            className="nav-btn"
+          >
+            Fixtures
           </button>
           <button
             onClick={() => setCurrentView('groups')}
@@ -1364,26 +1375,12 @@ function PredictorPage() {
                             style={{ position: 'absolute', top: `${topPosition}px` }}
                           >
                             <div 
-                              className={`matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
+                              className="matchup clickable-matchup"
                               onClick={() => {
-                                if (matchup.team1 && matchup.team2) {
-                                  handleMatchupClick('left', roundIndex, matchupIndex);
-                                }
+                                handleKnockoutInfoClick('left', roundIndex, matchupIndex);
                               }}
-                              title={matchup.team1 && matchup.team2 ? "Click for more info" : ""}
+                              title="Click for match info"
                             >
-                              {matchup.team1 && matchup.team2 && (
-                                <button
-                                  className="matchup-info-icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleKnockoutInfoClick('left', roundIndex, matchupIndex);
-                                  }}
-                                  title="View match info"
-                                >
-                                  ℹ️
-                                </button>
-                              )}
                               <div
                                 className={`team ${!matchup.team1 ? 'empty' : ''} ${
                                   isBracketTeamClickable('left', roundIndex, matchupIndex) ? 'clickable' : ''
@@ -1437,26 +1434,12 @@ function PredictorPage() {
                 {knockoutBracket.final.map((matchup, matchupIndex) => (
                   <div key={matchupIndex} className="matchup-wrapper final-wrapper">
                     <div 
-                      className={`matchup final-matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
+                      className="matchup final-matchup clickable-matchup"
                       onClick={() => {
-                        if (matchup.team1 && matchup.team2) {
-                          handleMatchupClick('final', 0, matchupIndex);
-                        }
+                        handleKnockoutInfoClick('final', 0, matchupIndex);
                       }}
-                      title={matchup.team1 && matchup.team2 ? "Click for more info" : ""}
+                      title="Click for match info"
                     >
-                      {matchup.team1 && matchup.team2 && (
-                        <button
-                          className="matchup-info-icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleKnockoutInfoClick('final', 0, matchupIndex);
-                          }}
-                          title="View match info"
-                        >
-                          ℹ️
-                        </button>
-                      )}
                       <div
                         className={`team ${!matchup.team1 ? 'empty' : ''} ${
                           isBracketTeamClickable('final', 0, matchupIndex) ? 'clickable' : ''
@@ -1500,26 +1483,12 @@ function PredictorPage() {
                     {knockoutBracket.thirdPlacePlayoff.map((matchup, matchupIndex) => (
                       <div key={matchupIndex} className="matchup-wrapper third-place-wrapper">
                         <div 
-                          className={`matchup third-place-matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
+                          className="matchup third-place-matchup clickable-matchup"
                           onClick={() => {
-                            if (matchup.team1 && matchup.team2) {
-                              handleMatchupClick('thirdPlacePlayoff', 0, matchupIndex);
-                            }
+                            handleKnockoutInfoClick('thirdPlacePlayoff', 0, matchupIndex);
                           }}
-                          title={matchup.team1 && matchup.team2 ? "Click for more info" : ""}
+                          title="Click for match info"
                         >
-                          {matchup.team1 && matchup.team2 && (
-                            <button
-                              className="matchup-info-icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleKnockoutInfoClick('thirdPlacePlayoff', 0, matchupIndex);
-                              }}
-                              title="View match info"
-                            >
-                              ℹ️
-                            </button>
-                          )}
                           <div
                             className={`team ${!matchup.team1 ? 'empty' : ''} ${
                               isBracketTeamClickable('thirdPlacePlayoff', 0, matchupIndex) ? 'clickable' : ''
@@ -1577,26 +1546,12 @@ function PredictorPage() {
                               style={{ position: 'absolute', top: `${topPosition}px` }}
                             >
                               <div 
-                                className={`matchup ${matchup.team1 && matchup.team2 ? 'clickable-matchup' : ''}`}
+                                className="matchup clickable-matchup"
                                 onClick={() => {
-                                  if (matchup.team1 && matchup.team2) {
-                                    handleMatchupClick('right', roundIndex, matchupIndex);
-                                  }
+                                  handleKnockoutInfoClick('right', roundIndex, matchupIndex);
                                 }}
-                                title={matchup.team1 && matchup.team2 ? "Click for more info" : ""}
+                                title="Click for match info"
                               >
-                                {matchup.team1 && matchup.team2 && (
-                                  <button
-                                    className="matchup-info-icon"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleKnockoutInfoClick('right', roundIndex, matchupIndex);
-                                    }}
-                                    title="View match info"
-                                  >
-                                    ℹ️
-                                  </button>
-                                )}
                                 <div
                                   className={`team ${!matchup.team1 ? 'empty' : ''} ${
                                     isBracketTeamClickable('right', roundIndex, matchupIndex) ? 'clickable' : ''
@@ -1673,7 +1628,7 @@ function PredictorPage() {
                         )}
                         {match.date && match.kickoffTime && (
                           <span>
-                            {new Date(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
+                            {parseDateString(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
                           </span>
                         )}
                       </div>
@@ -1728,7 +1683,7 @@ function PredictorPage() {
                       <div className="match-info-item">
                         <span className="match-info-label">Date:</span>
                         <span className="match-info-value">
-                          {new Date(selectedMatchInfo.date).toLocaleDateString('en-US', { 
+                          {parseDateString(selectedMatchInfo.date).toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             year: 'numeric', 
                             month: 'long', 

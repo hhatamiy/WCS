@@ -433,6 +433,11 @@ function SimulatorPage() {
   const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
   const [selectedMatchInfo, setSelectedMatchInfo] = useState(null); // For match info modal
 
+  // Helper function to parse date string correctly (avoid UTC timezone issues)
+  const parseDateString = (dateString) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
+  };
 
   const handleReset = () => {
     setGroups(initializeGroups());
@@ -627,6 +632,7 @@ function SimulatorPage() {
       venue: matchInfo.venue,
       date: matchInfo.date,
       kickoffTime: matchInfo.kickoffTime,
+      timezone: matchInfo.timezone || null,
       stage: stageName,
       matchId: matchInfo.matchId,
       description: matchInfo.description
@@ -1090,18 +1096,22 @@ function SimulatorPage() {
       // Simulate Round of 32
       await simulateRound(newBracket, 'left', 0);
       await simulateRound(newBracket, 'right', 0);
+      setKnockoutBracket({ ...newBracket }); // Update UI after Round of 32
 
       // Simulate Round of 16
       await simulateRound(newBracket, 'left', 1);
       await simulateRound(newBracket, 'right', 1);
+      setKnockoutBracket({ ...newBracket }); // Update UI after Round of 16
 
       // Simulate Quarterfinals
       await simulateRound(newBracket, 'left', 2);
       await simulateRound(newBracket, 'right', 2);
+      setKnockoutBracket({ ...newBracket }); // Update UI after Quarterfinals
 
       // Simulate Semifinals
       await simulateRound(newBracket, 'left', 3);
       await simulateRound(newBracket, 'right', 3);
+      setKnockoutBracket({ ...newBracket }); // Update UI after Semifinals
 
       // Simulate Third Place Playoff
       if (newBracket.thirdPlacePlayoff && newBracket.thirdPlacePlayoff[0].team1 && newBracket.thirdPlacePlayoff[0].team2) {
@@ -1111,7 +1121,7 @@ function SimulatorPage() {
       // Simulate Final
       await simulateRound(newBracket, 'final', 0);
 
-      setKnockoutBracket(newBracket);
+      setKnockoutBracket({ ...newBracket }); // Final update
       if (newBracket.final[0].winner) {
         setChampion(newBracket.final[0].winner);
       }
@@ -1145,10 +1155,14 @@ function SimulatorPage() {
       const matchInfo = getKnockoutMatchInfo(stageName);
 
       try {
+        // Strip emojis and extra text from team names for API call
+        const cleanTeam1 = extractCountryName(matchup.team1);
+        const cleanTeam2 = extractCountryName(matchup.team2);
+        
         const response = await api.get('/api/betting/odds', {
           params: {
-            team1: matchup.team1,
-            team2: matchup.team2,
+            team1: cleanTeam1,
+            team2: cleanTeam2,
             type: 'matchup',
           },
         });
@@ -1165,8 +1179,8 @@ function SimulatorPage() {
               market.outcomes.forEach(outcome => {
                 if (outcome.isPenalty) return;
                 const outcomeName = extractCountryName(outcome.name);
-                const team1Name = extractCountryName(matchup.team1);
-                const team2Name = extractCountryName(matchup.team2);
+                const team1Name = cleanTeam1;
+                const team2Name = cleanTeam2;
                 
                 if (outcomeName === team1Name) {
                   team1Prob = outcome.probability || 0.5;
@@ -1285,6 +1299,12 @@ function SimulatorPage() {
             className="nav-btn"
           >
             Predictor
+          </button>
+          <button
+            onClick={() => navigate('/fixtures')}
+            className="nav-btn"
+          >
+            Fixtures
           </button>
           <button
             onClick={() => setCurrentView('groups')}
@@ -1807,7 +1827,7 @@ function SimulatorPage() {
                         )}
                         {match.date && match.kickoffTime && (
                           <span>
-                            {new Date(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
+                            {parseDateString(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
                           </span>
                         )}
                       </div>
@@ -1856,7 +1876,7 @@ function SimulatorPage() {
                       <div className="match-info-item">
                         <span className="match-info-label">Date:</span>
                         <span className="match-info-value">
-                          {new Date(selectedMatchInfo.date).toLocaleDateString('en-US', { 
+                          {parseDateString(selectedMatchInfo.date).toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             year: 'numeric', 
                             month: 'long', 
