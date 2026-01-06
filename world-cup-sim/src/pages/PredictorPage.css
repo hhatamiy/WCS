@@ -1552,7 +1552,7 @@
   border: 2px solid rgba(0, 255, 120, 0.5);
   border-radius: 16px;
   padding: 30px;
-  max-width: 600px;
+  max-width: 800px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
@@ -1712,10 +1712,294 @@
   display: block;
 }
 
+/* Tabs */
+.match-info-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(0, 255, 120, 0.2);
+}
+
+.match-info-tab {
+  flex: 1;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  top: 2px;
+}
+
+.match-info-tab:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 255, 120, 0.05);
+}
+
+.match-info-tab.active {
+  color: #00ff78;
+  border-bottom-color: #00ff78;
+}
+
+/* Betting Odds Content in Modal */
+.match-odds-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.odds-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 15px;
+}
+
+.loading-spinner-small {
+  width: 40px;
+  height: 40px;
+}
+
+.loading-spinner-small .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 255, 120, 0.2);
+  border-top-color: #00ff78;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.odds-loading p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.no-odds-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 15px;
+}
+
+.no-odds-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.no-odds-title {
+  font-size: 20px;
+  color: #00ff78;
+  margin: 0;
+}
+
+.no-odds-description {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Matchup Header in Modal */
+.matchup-header-modal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(0, 255, 120, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 120, 0.3);
+}
+
+.team-display-modal {
+  flex: 1;
+  text-align: center;
+}
+
+.team-name-modal {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 10px 0;
+}
+
+.fifa-ranking-modal {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fifa-ranking-modal .ranking-label {
+  font-weight: 600;
+}
+
+.fifa-ranking-modal .ranking-value {
+  color: #00ff78;
+  font-weight: 600;
+}
+
+.vs-divider-modal {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Odds Section in Modal */
+.odds-section-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.section-title-modal {
+  font-size: 18px;
+  color: #00ff78;
+  margin: 0;
+}
+
+.bookmakers-list-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.bookmaker-card-modal {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid rgba(0, 255, 120, 0.2);
+}
+
+.bookmaker-name-modal {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ff78;
+  margin: 0 0 12px 0;
+}
+
+.markets-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.market-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.market-title-modal {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.outcomes-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.outcome-modal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid rgba(0, 255, 120, 0.3);
+}
+
+.outcome-left-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outcome-name-modal {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.outcome-probability-modal {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.outcome-price-modal {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ff78;
+}
+
+.penalty-section-modal {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 255, 120, 0.2);
+}
+
+.penalty-header-modal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.penalty-label-modal {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.penalty-chance-modal {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.penalty-outcome-modal {
+  border-left-color: rgba(255, 215, 0, 0.5);
+}
+
+.no-markets-modal {
+  padding: 15px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .match-info-modal {
     padding: 20px;
     width: 95%;
+    max-width: 95%;
+  }
+
+  .match-info-tabs {
+    gap: 5px;
+    margin-bottom: 15px;
+  }
+
+  .match-info-tab {
+    padding: 10px 12px;
+    font-size: 14px;
   }
 
   .match-info-teams {
@@ -1745,6 +2029,15 @@
 
   .match-teams {
     font-size: 14px;
+  }
+
+  .matchup-header-modal {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .team-name-modal {
+    font-size: 16px;
   }
 }
 

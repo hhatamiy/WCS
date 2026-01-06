@@ -165,6 +165,37 @@ function extractCountryName(teamString) {
   return cleaned;
 }
 
+// Helper function to extract flag emoji from team string
+function extractFlag(teamString) {
+  if (!teamString) return '';
+  
+  // Extract flag emoji (country flags or special flags like Scotland)
+  const flagMatch = teamString.match(/[\u{1F1E6}-\u{1F1FF}]{2}|🏴[󠁁-󠁿]*/gu);
+  return flagMatch ? flagMatch[0] : '';
+}
+
+// Helper function to format rank with proper ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+function formatRank(rank) {
+  if (!rank || rank === null || rank === undefined) return '';
+  
+  const num = parseInt(rank);
+  if (isNaN(num)) return rank;
+  
+  const lastDigit = num % 10;
+  const lastTwoDigits = num % 100;
+  
+  // Special cases for 11th, 12th, 13th
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+    return `${num}th`;
+  }
+  
+  // Regular cases
+  if (lastDigit === 1) return `${num}st`;
+  if (lastDigit === 2) return `${num}nd`;
+  if (lastDigit === 3) return `${num}rd`;
+  return `${num}th`;
+}
+
 // Helper function to get country flag gradient colors
 function getCountryGradient(teamString) {
   const countryName = extractCountryName(teamString);
@@ -354,6 +385,10 @@ function PredictorPage() {
   const [touchStartPos, setTouchStartPos] = useState(null);
   const [touchedTeam, setTouchedTeam] = useState(null);
   const [selectedMatchInfo, setSelectedMatchInfo] = useState(null); // For match info modal
+  const [activeTab, setActiveTab] = useState('info'); // Track current tab: 'info' or 'odds'
+  const [bettingOdds, setBettingOdds] = useState(null); // Store fetched odds data
+  const [oddsLoading, setOddsLoading] = useState(false); // Loading state for odds
+  const [oddsError, setOddsError] = useState(null); // Error state for odds
 
   // Helper function to parse date string correctly (avoid UTC timezone issues)
   const parseDateString = (dateString) => {
@@ -947,21 +982,54 @@ function PredictorPage() {
     }
   };
 
-  // Navigate to betting odds page for a group
+  // Handle group card click to show all matches info (similar to SimulatorPage)
   const handleGroupClick = (groupName) => {
-    const groupTeams = groups[groupName].teams;
-    if (groupTeams.length === 4) {
-      // Pass all teams to show all 6 matchups in the group
-      navigate('/betting-odds', {
-        state: {
-          type: 'group',
-          groupName: groupName,
-          allTeams: groupTeams.map(team => team.name),
-          returnPath: '/predictor',
-          returnView: 'groups',
-        },
-      });
-    }
+    const group = groups[groupName];
+    
+    // Generate match list from schedule using current teams
+    const teamNames = group.teams.map(t => t.name);
+    const matchOrder = [
+      [0, 1], // Match 1: Position 1 vs Position 2
+      [2, 3], // Match 2: Position 3 vs Position 4
+      [3, 1], // Match 3: Position 4 vs Position 2
+      [0, 2], // Match 4: Position 1 vs Position 3
+      [3, 0], // Match 5: Position 4 vs Position 1
+      [1, 2]  // Match 6: Position 2 vs Position 3
+    ];
+    
+    const scheduledMatches = matchOrder.map(([idx1, idx2], matchIdx) => {
+      const matchNumberInGroup = matchIdx + 1;
+      const overallMatchNumber = getOverallMatchNumber(groupName, matchNumberInGroup);
+      const matchInfo = getGroupMatchInfo(`Group ${groupName}`, matchNumberInGroup);
+      
+      return {
+        team1: teamNames[idx1],
+        team2: teamNames[idx2],
+        venue: matchInfo.venue,
+        date: matchInfo.date,
+        kickoffTime: matchInfo.kickoffTime,
+        timezone: matchInfo.timezone,
+        matchNumber: overallMatchNumber,
+        matchNumberInGroup: matchNumberInGroup
+      };
+    });
+    
+    // Sort matches by date and time (earliest first)
+    scheduledMatches.sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.kickoffTime}`);
+      const dateB = new Date(`${b.date}T${b.kickoffTime}`);
+      return dateA - dateB;
+    });
+    
+    setSelectedMatchInfo({
+      stage: `Group ${groupName}`,
+      allMatches: scheduledMatches
+    });
+    
+    // Reset tab and odds when opening modal
+    setActiveTab('info');
+    setBettingOdds(null);
+    setOddsError(null);
   };
 
   // Calculate overall match number for group stage matches
@@ -1029,6 +1097,11 @@ function PredictorPage() {
       stage: `Group ${groupName}`,
       allMatches: scheduledMatches
     });
+    
+    // Reset tab and odds when opening modal
+    setActiveTab('info');
+    setBettingOdds(null);
+    setOddsError(null);
   };
 
   // Get match ID based on bracket position
@@ -1060,6 +1133,42 @@ function PredictorPage() {
     };
     
     return matchIdMap[side]?.[roundIndex] || null;
+  };
+
+  // Fetch betting odds for a matchup
+  const fetchMatchOdds = async (team1, team2) => {
+    // Don't fetch if teams aren't set
+    if (!team1 || !team2 || team1 === 'TBD' || team2 === 'TBD') {
+      setBettingOdds(null);
+      setOddsError('Teams must be set to view odds');
+      setOddsLoading(false);
+      return;
+    }
+
+    try {
+      setOddsLoading(true);
+      setOddsError(null);
+      
+      // Determine if this is a group stage match or knockout match
+      const isGroupMatch = selectedMatchInfo?.stage?.startsWith('Group');
+      const matchType = isGroupMatch ? 'group' : 'matchup';
+      
+      const response = await api.get('/api/betting/odds', {
+        params: {
+          team1: team1,
+          team2: team2,
+          type: matchType,
+        },
+      });
+
+      setBettingOdds(response.data);
+    } catch (err) {
+      setOddsError(err.response?.data?.message || 'Failed to fetch betting odds');
+      setBettingOdds(null);
+      console.error('Error fetching odds:', err);
+    } finally {
+      setOddsLoading(false);
+    }
   };
 
   // Show match info for a knockout matchup
@@ -1104,7 +1213,19 @@ function PredictorPage() {
       matchId: matchInfo.matchId,
       description: matchInfo.description
     });
+    
+    // Reset tab and odds when opening modal
+    setActiveTab('info');
+    setBettingOdds(null);
+    setOddsError(null);
   };
+
+  // Fetch odds when switching to odds tab
+  useEffect(() => {
+    if (activeTab === 'odds' && selectedMatchInfo) {
+      fetchMatchOdds(selectedMatchInfo.team1, selectedMatchInfo.team2);
+    }
+  }, [activeTab, selectedMatchInfo]);
 
 
   return (
@@ -1595,10 +1716,39 @@ function PredictorPage() {
 
       {/* Match Info Modal */}
       {selectedMatchInfo && (
-        <div className="match-info-modal-overlay" onClick={() => setSelectedMatchInfo(null)}>
+        <div className="match-info-modal-overlay" onClick={() => {
+          setSelectedMatchInfo(null);
+          setActiveTab('info');
+          setBettingOdds(null);
+          setOddsError(null);
+        }}>
           <div className="match-info-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="match-info-modal-close" onClick={() => setSelectedMatchInfo(null)}>×</button>
+            <button className="match-info-modal-close" onClick={() => {
+              setSelectedMatchInfo(null);
+              setActiveTab('info');
+              setBettingOdds(null);
+              setOddsError(null);
+            }}>×</button>
             <h3>{selectedMatchInfo.allMatches ? `${selectedMatchInfo.stage} - All Matches` : 'Match Details'}</h3>
+            
+            {/* Tabs - Only show for single match (not group view) */}
+            {!selectedMatchInfo.allMatches && (
+              <div className="match-info-tabs">
+                <button
+                  className={`match-info-tab ${activeTab === 'info' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('info')}
+                >
+                  Match Info
+                </button>
+                <button
+                  className={`match-info-tab ${activeTab === 'odds' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('odds')}
+                >
+                  Betting Odds
+                </button>
+              </div>
+            )}
+            
             <div className="match-info-content">
               {selectedMatchInfo.allMatches ? (
                 // Show all matches in the group
@@ -1615,6 +1765,9 @@ function PredictorPage() {
                         stage: selectedMatchInfo.stage,
                         matchNumber: match.matchNumber
                       });
+                      setActiveTab('info');
+                      setBettingOdds(null);
+                      setOddsError(null);
                     }}>
                       <div className="match-item-header">
                         <span className="match-number">Match {match.matchNumber || match.matchNumberInGroup}</span>
@@ -1635,8 +1788,8 @@ function PredictorPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                // Show single match details
+              ) : activeTab === 'info' ? (
+                // Show single match details (Match Info tab)
                 <>
                   <div className="match-info-teams">
                     <div className="match-info-team">
@@ -1700,6 +1853,173 @@ function PredictorPage() {
                     )}
                   </div>
                 </>
+              ) : (
+                // Show betting odds (Betting Odds tab)
+                <div className="match-odds-content">
+                  {oddsLoading ? (
+                    <div className="odds-loading">
+                      <div className="loading-spinner-small">
+                        <div className="spinner"></div>
+                      </div>
+                      <p>Loading betting odds...</p>
+                    </div>
+                  ) : oddsError || !bettingOdds || !bettingOdds.odds || bettingOdds.odds.length === 0 ? (
+                    <div className="no-odds-section">
+                      <div className="no-odds-icon">📊</div>
+                      <h3 className="no-odds-title">Odds not available</h3>
+                      <p className="no-odds-description">
+                        {oddsError || 'Betting odds are not currently available for this matchup. Odds are typically published closer to the match date.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="matchup-header-modal">
+                        <div className="team-display-modal team1">
+                          <h4 className="team-name-modal">
+                            {extractFlag(bettingOdds?.team1 || selectedMatchInfo.team1)} {extractCountryName(bettingOdds?.team1 || selectedMatchInfo.team1)}
+                          </h4>
+                          {bettingOdds?.rankings?.team1?.rank && (
+                            <div className="fifa-ranking-modal">
+                              <span className="ranking-label">FIFA Rank:</span>
+                              <span className="ranking-value">#{formatRank(bettingOdds.rankings.team1.rank)}</span>
+                              {bettingOdds.rankings.team1.points && (
+                                <span className="ranking-points">({bettingOdds.rankings.team1.points} pts)</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="vs-divider-modal">
+                          <span className="vs-text">VS</span>
+                        </div>
+                        <div className="team-display-modal team2">
+                          <h4 className="team-name-modal">
+                            {extractFlag(bettingOdds?.team2 || selectedMatchInfo.team2)} {extractCountryName(bettingOdds?.team2 || selectedMatchInfo.team2)}
+                          </h4>
+                          {bettingOdds?.rankings?.team2?.rank && (
+                            <div className="fifa-ranking-modal">
+                              <span className="ranking-label">FIFA Rank:</span>
+                              <span className="ranking-value">#{formatRank(bettingOdds.rankings.team2.rank)}</span>
+                              {bettingOdds.rankings.team2.points && (
+                                <span className="ranking-points">({bettingOdds.rankings.team2.points} pts)</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="odds-section-modal">
+                        <h4 className="section-title-modal">Available Odds</h4>
+                        <div className="bookmakers-list-modal">
+                          {bettingOdds.odds.slice(0, 2).map((bookmaker, index) => (
+                            <div key={index} className="bookmaker-card-modal">
+                              <h5 className="bookmaker-name-modal">
+                                {bookmaker.title || bookmaker.name || `Bookmaker ${index + 1}`}
+                              </h5>
+                              
+                              {bookmaker.markets && bookmaker.markets.length > 0 ? (
+                                <div className="markets-modal">
+                                  {bookmaker.markets.map((market, marketIndex) => (
+                                    <div key={marketIndex} className="market-modal">
+                                      <h6 className="market-title-modal">
+                                        {market.key === 'h2h' ? 'Match Winner' : market.key}
+                                      </h6>
+                                      {market.outcomes && (() => {
+                                        // Determine if this is a group stage match
+                                        const isGroupMatch = selectedMatchInfo?.stage?.startsWith('Group');
+                                        
+                                        // Filter outcomes (exclude penalties for main display)
+                                        let displayOutcomes = market.outcomes.filter(outcome => !outcome.isPenalty);
+                                        
+                                        // For group matches, sort outcomes: Team A, Draw, Team B
+                                        if (isGroupMatch && displayOutcomes.length > 0) {
+                                          const team1Name = extractCountryName(bettingOdds?.team1 || selectedMatchInfo?.team1 || '');
+                                          const team2Name = extractCountryName(bettingOdds?.team2 || selectedMatchInfo?.team2 || '');
+                                          
+                                          // Helper function to get priority: Team A = 0, Draw = 1, Team B = 2
+                                          const getPriority = (name) => {
+                                            const cleanName = extractCountryName(name);
+                                            if (cleanName.toLowerCase() === 'draw') return 1;
+                                            if (cleanName === team1Name) return 0;
+                                            if (cleanName === team2Name) return 2;
+                                            return 3; // Unknown, put at end
+                                          };
+                                          
+                                          displayOutcomes.sort((a, b) => {
+                                            const aPriority = getPriority(a.name);
+                                            const bPriority = getPriority(b.name);
+                                            return aPriority - bPriority;
+                                          });
+                                        }
+                                        
+                                        return (
+                                          <div className="outcomes-modal">
+                                            {displayOutcomes.map((outcome, outcomeIndex) => (
+                                              <div key={outcomeIndex} className="outcome-modal">
+                                                <div className="outcome-left-modal">
+                                                  <span className="outcome-name-modal">
+                                                    {isGroupMatch && extractCountryName(outcome.name).toLowerCase() === 'draw' 
+                                                      ? 'Draw' 
+                                                      : outcome.name}
+                                                  </span>
+                                                  {outcome.probability !== undefined && (
+                                                    <span className="outcome-probability-modal">
+                                                      {(outcome.probability * 100).toFixed(1)}%
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <span className="outcome-price-modal">
+                                                  {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
+                                                </span>
+                                              </div>
+                                            ))}
+                                            {/* Show penalty probabilities only for knockout matches */}
+                                            {bookmaker.isKnockout && market.outcomes.filter(o => o.isPenalty).length > 0 && (
+                                            <div className="penalty-section-modal">
+                                              <div className="penalty-header-modal">
+                                                <span className="penalty-label-modal">Penalty Shootout Probabilities</span>
+                                                {bookmaker.penaltyProbability !== undefined && (
+                                                  <span className="penalty-chance-modal">
+                                                    {(bookmaker.penaltyProbability * 100).toFixed(1)}% chance
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {market.outcomes
+                                                .filter(outcome => outcome.isPenalty)
+                                                .map((outcome, outcomeIndex) => (
+                                                  <div key={`penalty-${outcomeIndex}`} className="outcome-modal penalty-outcome-modal">
+                                                    <div className="outcome-left-modal">
+                                                      <span className="outcome-name-modal">{outcome.name}</span>
+                                                      {outcome.probability !== undefined && (
+                                                        <span className="outcome-probability-modal">
+                                                          {(outcome.probability * 100).toFixed(1)}%
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                    <span className="outcome-price-modal">
+                                                      {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="no-markets-modal">
+                                  <p>No odds available from this bookmaker</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
