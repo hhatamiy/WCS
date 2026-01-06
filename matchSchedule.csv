@@ -71,35 +71,35 @@ Match,Team A,Team B,Stage,Stadium,Date,Local Time,Timezone
 70,Jordan,Argentina,Group J,Dallas Stadium,2026-06-27,21:00,CT
 71,Colombia,Portugal,Group K,Miami Stadium,2026-06-27,19:30,ET
 72,IC Path 1 winner,Uzbekistan,Group K,Atlanta Stadium,2026-06-27,19:30,ET
-73,2A,2B,Round of 32,Los Angeles Stadium,2026-06-28,12:00,PT
-74,1C,2F,Round of 32,Houston Stadium,2026-06-29,12:00,CT
-75,1E,3ABCDF,Round of 32,Boston Stadium,2026-06-29,16:30,ET
-76,1F,2C,Round of 32,Monterrey Stadium,2026-06-29,18:00,CT
-77,2E,2I,Round of 32,Dallas Stadium,2026-06-30,12:00,CT
-78,1I,3CDFGH,Round of 32,New York/New Jersey Stadium,2026-06-30,17:00,ET
-79,1A,3CEFHI,Round of 32,Mexico City Stadium,2026-06-30,20:00,CT
-80,1L,3EHIJK,Round of 32,Atlanta Stadium,2026-07-01,12:00,ET
-81,1G,3AEHIJ,Round of 32,Seattle Stadium,2026-07-01,13:00,PT
-82,1D,3BEFIJ,Round of 32,San Francisco Bay Area Stadium,2026-07-01,17:00,PT
-83,1H,2J,Round of 32,Los Angeles Stadium,2026-07-02,12:00,PT
-84,2K,2L,Round of 32,Toronto Stadium,2026-07-02,19:00,ET
-85,1B,3EFGIJ,Round of 32,BC Place Vancouver,2026-07-02,20:00,PT
-86,2D,2G,Round of 32,Dallas Stadium,2026-07-03,13:00,CT
-87,1J,2H,Round of 32,Miami Stadium,2026-07-03,18:00,ET
-88,1K,3DEIJL,Round of 32,Kansas City Stadium,2026-07-03,20:30,CT
-89,W73,W75,Round of 16,Houston Stadium,2026-07-04,12:00,CT
-90,W74,W77,Round of 16,Philadelphia Stadium,2026-07-04,17:00,ET
-91,W76,W78,Round of 16,New York/New Jersey Stadium,2026-07-05,16:00,ET
-92,W79,W80,Round of 16,Mexico City Stadium,2026-07-05,19:00,CT
-93,W83,W84,Round of 16,Dallas Stadium,2026-07-06,14:00,CT
-94,W81,W82,Round of 16,Seattle Stadium,2026-07-06,17:00,PT
-95,W86,W88,Round of 16,Atlanta Stadium,2026-07-07,12:00,ET
-96,W85,W87,Round of 16,BC Place Vancouver,2026-07-07,13:00,PT
-97,W89,W90,Quarter-final,Boston Stadium,2026-07-09,16:00,ET
-98,W93,W94,Quarter-final,Los Angeles Stadium,2026-07-10,12:00,PT
-99,W91,W92,Quarter-final,Miami Stadium,2026-07-11,17:00,ET
-100,W95,W96,Quarter-final,Kansas City Stadium,2026-07-11,20:00,CT
-101,W97,W98,Semi-final,Dallas Stadium,2026-07-14,14:00,CT
-102,W99,W100,Semi-final,Atlanta Stadium,2026-07-15,12:00,ET
-103,RU101,RU102,Third Place Playoff,Miami Stadium,2026-07-18,17:00,ET
-104,W101,W102,Final,New York/New Jersey Stadium,2026-07-19,15:00,ET
+73,Runner-up Group A,Runner-up Group B,Round of 32,SoFi Stadium,2026-06-28,12:00,PT
+74,Winner Group E,3rd Group A/B/C/D/F,Round of 32,Gillette Stadium,2026-06-29,16:30,ET
+75,Winner Group F,Runner-up Group C,Round of 32,Estadio BBVA,2026-06-29,19:00,CT
+76,Winner Group C,Runner-up Group F,Round of 32,NRG Stadium,2026-06-29,12:00,ET
+77,Winner Group I,3rd Group C/D/F/G/H,Round of 32,MetLife Stadium,2026-06-30,17:00,ET
+78,Runner-up Group E,Runner-up Group I,Round of 32,AT&T Stadium,2026-06-30,12:00,CT
+79,Winner Group A,3rd Group C/E/F/H/I,Round of 32,Estadio Azteca,2026-06-30,19:00,CT
+80,Winner Group L,3rd Group E/H/I/J/K,Round of 32,Mercedes-Benz Stadium,2026-07-01,12:00,ET
+81,Winner Group D,3rd Group B/E/F/I/J,Round of 32,Levi's Stadium,2026-07-01,17:00,PT
+82,Winner Group G,3rd Group A/E/H/I/J,Round of 32,Lumen Field,2026-07-01,13:00,PT
+83,Runner-up Group K,Runner-up Group L,Round of 32,BMO Field,2026-07-02,19:00,ET
+84,Winner Group H,Runner-up Group J,Round of 32,SoFi Stadium,2026-07-02,12:00,PT
+85,Winner Group B,3rd Group E/F/G/I/J,Round of 32,BC Place,2026-07-02,20:00,PT
+86,Winner Group J,Runner-up Group H,Round of 32,Hard Rock Stadium,2026-07-03,18:00,ET
+87,Winner Group K,3rd Group D/E/I/J/L,Round of 32,Arrowhead Stadium,2026-07-03,20:30,CT
+88,Runner-up Group D,Runner-up Group G,Round of 32,AT&T Stadium,2026-07-03,13:00,CT
+89,Winner Match 74,Winner Match 77,Round of 16,Lincoln Financial Field,2026-07-04,17:00,ET
+90,Winner Match 73,Winner Match 75,Round of 16,NRG Stadium,2026-07-04,12:00,CT
+91,Winner Match 76,Winner Match 78,Round of 16,MetLife Stadium,2026-07-05,16:00,ET
+92,Winner Match 79,Winner Match 80,Round of 16,Estadio Azteca,2026-07-05,18:00,CT
+93,Winner Match 83,Winner Match 84,Round of 16,AT&T Stadium,2026-07-06,14:00,CT
+94,Winner Match 81,Winner Match 82,Round of 16,Lumen Field,2026-07-06,17:00,PT
+95,Winner Match 86,Winner Match 88,Round of 16,Mercedes-Benz Stadium,2026-07-07,12:00,ET
+96,Winner Match 85,Winner Match 87,Round of 16,BC Place,2026-07-07,13:00,PT
+97,Winner Match 89,Winner Match 90,Quarterfinals,Gillette Stadium,2026-07-09,16:00,ET
+98,Winner Match 93,Winner Match 94,Quarterfinals,SoFi Stadium,2026-07-10,12:00,PT
+99,Winner Match 91,Winner Match 92,Quarterfinals,Hard Rock Stadium,2026-07-11,17:00,ET
+100,Winner Match 95,Winner Match 96,Quarterfinals,Arrowhead Stadium,2026-07-11,20:00,CT
+101,Winner Match 97,Winner Match 98,Semifinals,AT&T Stadium,2026-07-14,14:00,CT
+102,Winner Match 99,Winner Match 100,Semifinals,Mercedes-Benz Stadium,2026-07-15,15:00,ET
+103,Loser Match 101,Loser Match 102,Third Place,Hard Rock Stadium,2026-07-18,17:00,ET
+104,Winner Match 101,Winner Match 102,Final,New York/New Jersey Stadium,2026-07-19,15:00,ET

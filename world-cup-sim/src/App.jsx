@@ -4,6 +4,7 @@ import DrawSimulatorPage from './pages/DrawSimulatorPage';
 import DrawResultPage from './pages/DrawResultPage';
 import BettingOddsPage from './pages/BettingOddsPage';
 import SimulatorPage from './pages/SimulatorPage';
+import FixturesPage from './pages/FixturesPage';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/draw-result/:drawId" element={<DrawResultPage />} />
         <Route path="/betting-odds" element={<BettingOddsPage />} />
         <Route path="/simulator" element={<SimulatorPage />} />
+        <Route path="/fixtures" element={<FixturesPage />} />
         <Route path="/" element={<Navigate to="/predictor" replace />} />
       </Routes>
     </BrowserRouter>
