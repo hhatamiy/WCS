@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { generateRoundOf32Matchups } from '../utils/knockoutAlgorithm';
 import api from '../api/api';
+import { getGroupMatchInfo, getKnockoutMatchInfo, getKnockoutMatchInfoById } from '../data/matchSchedule';
 import './SimulatorPage.css';
 
 // Team alternatives mapping for unqualified teams
@@ -430,6 +431,7 @@ function SimulatorPage() {
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'groupName-index'
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
+  const [selectedMatchInfo, setSelectedMatchInfo] = useState(null); // For match info modal
 
 
   const handleReset = () => {
@@ -442,6 +444,193 @@ function SimulatorPage() {
     setCurrentView('groups');
     setSimulatedGroups(false);
     setSimulatedKnockout(false);
+    setSelectedMatchInfo(null);
+  };
+
+  // Handle match click in group stage
+  const handleMatchClick = (groupName, matchIndex, match) => {
+    // Calculate overall match number if not already set
+    const overallMatchNumber = match.matchNumber || getOverallMatchNumber(groupName, match.matchNumberInGroup || (matchIndex + 1));
+    
+    setSelectedMatchInfo({
+      team1: match.team1,
+      team2: match.team2,
+      score1: match.score1,
+      score2: match.score2,
+      isDraw: match.isDraw,
+      venue: match.venue,
+      date: match.date,
+      kickoffTime: match.kickoffTime,
+      stage: `Group ${groupName}`,
+      matchNumber: overallMatchNumber
+    });
+  };
+
+  // Calculate overall match number for group stage matches
+  // Maps group letter and match position (1-6) to actual match number from CSV
+  const GROUP_MATCH_MAPPING = {
+    'A': [1, 2, 25, 28, 53, 54],
+    'B': [3, 8, 26, 27, 51, 52],
+    'C': [5, 7, 29, 30, 49, 50],
+    'D': [4, 6, 31, 32, 59, 60],
+    'E': [9, 10, 33, 34, 55, 56],
+    'F': [11, 12, 35, 36, 57, 58],
+    'G': [15, 16, 39, 40, 63, 64],
+    'H': [13, 14, 37, 38, 65, 66],
+    'I': [17, 18, 41, 42, 61, 62],
+    'J': [19, 20, 43, 44, 69, 70],
+    'K': [23, 24, 47, 48, 71, 72],
+    'L': [21, 22, 45, 46, 67, 68]
+  };
+
+  const getOverallMatchNumber = (groupName, matchNumberInGroup) => {
+    if (!GROUP_MATCH_MAPPING[groupName] || matchNumberInGroup < 1 || matchNumberInGroup > 6) {
+      return matchNumberInGroup;
+    }
+    return GROUP_MATCH_MAPPING[groupName][matchNumberInGroup - 1];
+  };
+
+  // Handle group card click to show all matches info
+  const handleGroupCardClick = (groupName) => {
+    const simulatedMatches = groupMatches[groupName] || [];
+    const group = groups[groupName];
+    
+    // If matches have been simulated, use those
+    if (simulatedMatches.length > 0) {
+      // Sort matches by date and time (earliest first)
+      const sortedMatches = [...simulatedMatches].sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.kickoffTime}`);
+        const dateB = new Date(`${b.date}T${b.kickoffTime}`);
+        return dateA - dateB;
+      });
+      
+      setSelectedMatchInfo({
+        stage: `Group ${groupName}`,
+        allMatches: sortedMatches
+      });
+    } else {
+      // Before simulation, generate match list from schedule using current teams
+      const teamNames = group.teams.map(t => t.name);
+      const matchOrder = [
+        [0, 1], // Match 1: Position 1 vs Position 2
+        [2, 3], // Match 2: Position 3 vs Position 4
+        [3, 1], // Match 3: Position 4 vs Position 2
+        [0, 2], // Match 4: Position 1 vs Position 3
+        [3, 0], // Match 5: Position 4 vs Position 1
+        [1, 2]  // Match 6: Position 2 vs Position 3
+      ];
+      
+      const scheduledMatches = matchOrder.map(([idx1, idx2], matchIdx) => {
+        const matchNumberInGroup = matchIdx + 1;
+        const overallMatchNumber = getOverallMatchNumber(groupName, matchNumberInGroup);
+        const matchInfo = getGroupMatchInfo(`Group ${groupName}`, matchNumberInGroup);
+        
+        return {
+          team1: teamNames[idx1],
+          team2: teamNames[idx2],
+          score1: null,
+          score2: null,
+          isDraw: null,
+          venue: matchInfo.venue,
+          date: matchInfo.date,
+          kickoffTime: matchInfo.kickoffTime,
+          timezone: matchInfo.timezone,
+          matchNumber: overallMatchNumber,
+          matchNumberInGroup: matchNumberInGroup
+        };
+      });
+      
+      // Sort matches by date and time (earliest first)
+      scheduledMatches.sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.kickoffTime}`);
+        const dateB = new Date(`${b.date}T${b.kickoffTime}`);
+        return dateA - dateB;
+      });
+      
+      setSelectedMatchInfo({
+        stage: `Group ${groupName}`,
+        allMatches: scheduledMatches
+      });
+    }
+  };
+
+  // Get match ID based on bracket position
+  const getMatchIdFromBracketPosition = (side, roundIndex, matchupIndex) => {
+    if (side === 'final') {
+      return 104; // Final is match 104
+    } else if (side === 'thirdPlacePlayoff') {
+      return 103; // Third Place is match 103
+    }
+    
+    // Round of 32: left (73-80), right (81-88)
+    // Round of 16: left (89-92), right (93-96)
+    // Quarterfinals: left (97-98), right (99-100)
+    // Semifinals: left (101), right (102)
+    
+    const matchIdMap = {
+      'left': {
+        0: 73 + matchupIndex,      // Round of 32: 73-80
+        1: 89 + matchupIndex,      // Round of 16: 89-92
+        2: 97 + matchupIndex,      // Quarterfinals: 97-98
+        3: 101                     // Semifinals: 101
+      },
+      'right': {
+        0: 81 + matchupIndex,      // Round of 32: 81-88
+        1: 93 + matchupIndex,      // Round of 16: 93-96
+        2: 99 + matchupIndex,      // Quarterfinals: 99-100
+        3: 102                     // Semifinals: 102
+      }
+    };
+    
+    return matchIdMap[side]?.[roundIndex] || null;
+  };
+
+  // Handle knockout matchup click
+  const handleKnockoutMatchupClick = (side, roundIndex, matchupIndex) => {
+    if (!knockoutBracket) return;
+    
+    let matchup;
+    if (side === 'final') {
+      matchup = knockoutBracket.final[matchupIndex];
+    } else if (side === 'thirdPlacePlayoff') {
+      matchup = knockoutBracket.thirdPlacePlayoff ? knockoutBracket.thirdPlacePlayoff[matchupIndex] : null;
+      if (!matchup) return;
+    } else {
+      matchup = knockoutBracket[side][roundIndex][matchupIndex];
+    }
+
+    const roundNames = {
+      0: 'Round of 32',
+      1: 'Round of 16',
+      2: 'Quarterfinals',
+      3: 'Semifinals',
+    };
+    
+    const stageName = side === 'final' ? 'Final' : 
+                     side === 'thirdPlacePlayoff' ? 'Third Place' : 
+                     roundNames[roundIndex] || 'Round of 32';
+    
+    // Get match info from schedule using match ID
+    const matchId = getMatchIdFromBracketPosition(side, roundIndex, matchupIndex);
+    const matchInfo = matchId ? getKnockoutMatchInfoById(matchId) : getKnockoutMatchInfo(stageName, matchupIndex);
+    
+    // Show match info even if teams aren't set yet (before simulation)
+    setSelectedMatchInfo({
+      team1: matchup?.team1 || null,
+      team2: matchup?.team2 || null,
+      score1: matchup?.score1 || null,
+      score2: matchup?.score2 || null,
+      isPenalties: matchup?.isPenalties || false,
+      penaltyScore1: matchup?.penaltyScore1 || null,
+      penaltyScore2: matchup?.penaltyScore2 || null,
+      winner: matchup?.winner || null,
+      venue: matchInfo.venue,
+      date: matchInfo.date,
+      kickoffTime: matchInfo.kickoffTime,
+      stage: stageName,
+      matchId: matchInfo.matchId,
+      description: matchInfo.description
+    });
   };
 
   // Handle team replacement from dropdown
@@ -586,9 +775,15 @@ function SimulatorPage() {
         ];
 
         // Simulate all 6 matches in FIFA's official order
-        for (const [idx1, idx2] of matchOrder) {
+        for (let matchIdx = 0; matchIdx < matchOrder.length; matchIdx++) {
+          const [idx1, idx2] = matchOrder[matchIdx];
           const team1 = teamNames[idx1];
           const team2 = teamNames[idx2];
+          const matchNumberInGroup = matchIdx + 1;
+          const overallMatchNumber = getOverallMatchNumber(groupName, matchNumberInGroup);
+          
+          // Get match info from official schedule
+          const matchInfo = getGroupMatchInfo(`Group ${groupName}`, matchNumberInGroup);
 
             try {
               // Get match probabilities from API
@@ -668,7 +863,13 @@ function SimulatorPage() {
                 team2,
                 score1: score.team1,
                 score2: score.team2,
-                isDraw: score.isDraw
+                isDraw: score.isDraw,
+                venue: matchInfo.venue,
+                date: matchInfo.date,
+                kickoffTime: matchInfo.kickoffTime,
+                timezone: matchInfo.timezone,
+                matchNumber: overallMatchNumber,
+                matchNumberInGroup: matchNumberInGroup
               });
             } catch (error) {
               console.error(`Error simulating match ${team1} vs ${team2}:`, error);
@@ -703,7 +904,13 @@ function SimulatorPage() {
                 team2,
                 score1: score.team1,
                 score2: score.team2,
-                isDraw: score.isDraw
+                isDraw: score.isDraw,
+                venue: matchInfo.venue,
+                date: matchInfo.date,
+                kickoffTime: matchInfo.kickoffTime,
+                timezone: matchInfo.timezone,
+                matchNumber: overallMatchNumber,
+                matchNumberInGroup: matchNumberInGroup
               });
             }
           }
@@ -918,10 +1125,24 @@ function SimulatorPage() {
   const simulateRound = async (bracket, side, roundIndex) => {
     const round = side === 'final' ? bracket.final : (side === 'thirdPlacePlayoff' ? bracket.thirdPlacePlayoff : bracket[side][roundIndex]);
     
+    // Determine stage name for match info lookup
+    let stageName = '';
+    if (side === 'final') {
+      stageName = 'Final';
+    } else if (side === 'thirdPlacePlayoff') {
+      stageName = 'Third Place';
+    } else {
+      const roundNames = ['Round of 32', 'Round of 16', 'Quarterfinals', 'Semifinals'];
+      stageName = roundNames[roundIndex] || 'Round of 32';
+    }
+    
     for (let i = 0; i < round.length; i++) {
       const matchup = round[i];
       if (!matchup.team1 || !matchup.team2) continue;
       if (matchup.winner) continue; // Already simulated
+
+      // Get match info from schedule
+      const matchInfo = getKnockoutMatchInfo(stageName);
 
       try {
         const response = await api.get('/api/betting/odds', {
@@ -968,6 +1189,11 @@ function SimulatorPage() {
         matchup.score1 = score.team1;
         matchup.score2 = score.team2;
         matchup.isPenalties = score.isPenalties;
+        
+        // Add match info
+        matchup.venue = matchInfo.venue;
+        matchup.date = matchInfo.date;
+        matchup.kickoffTime = matchInfo.kickoffTime;
         
         if (score.isPenalties) {
           matchup.penaltyScore1 = score.penaltyScore1;
@@ -1109,7 +1335,12 @@ function SimulatorPage() {
                 const matches = groupMatches[groupName] || [];
 
                 return (
-                  <div key={groupName} className="group-card">
+                  <div 
+                    key={groupName} 
+                    className="group-card clickable-group"
+                    onClick={() => handleGroupCardClick(groupName)}
+                    title="Click for more info"
+                  >
                     <h3>Group {groupName}</h3>
                     {simulatedGroups && standings.length > 0 && (
                       <div className="standings-table">
@@ -1209,7 +1440,12 @@ function SimulatorPage() {
                       <div className="matches-section">
                         <h4>Matches</h4>
                         {matches.map((match, idx) => (
-                          <div key={idx} className="match-result">
+                          <div 
+                            key={idx} 
+                            className="match-result clickable-match"
+                            onClick={() => handleMatchClick(groupName, idx, match)}
+                            title="Click for more info"
+                          >
                             {getCountryCode(match.team1)} {match.score1} - {match.score2} {getCountryCode(match.team2)}
                           </div>
                         ))}
@@ -1349,7 +1585,13 @@ function SimulatorPage() {
                             className="matchup-wrapper"
                             style={{ position: 'absolute', top: `${topPosition}px` }}
                           >
-                            <div className="matchup">
+                            <div 
+                              className="matchup clickable-matchup"
+                              onClick={() => {
+                                handleKnockoutMatchupClick('left', roundIndex, matchupIndex);
+                              }}
+                              title="Click for more info"
+                            >
                               <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                                 {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                               </div>
@@ -1400,7 +1642,13 @@ function SimulatorPage() {
                 <div className="round-label">Final</div>
                 {knockoutBracket.final.map((matchup, matchupIndex) => (
                   <div key={matchupIndex} className="matchup-wrapper final-wrapper">
-                    <div className="matchup final-matchup">
+                    <div 
+                      className="matchup final-matchup clickable-matchup"
+                      onClick={() => {
+                        handleKnockoutMatchupClick('final', 0, matchupIndex);
+                      }}
+                      title="Click for more info"
+                    >
                       <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''} ${champion === matchup.team1 ? 'champion' : ''}`}>
                         {matchup.team1 ? getFullCountryName(matchup.team1) : 'TBD'}
                       </div>
@@ -1432,7 +1680,13 @@ function SimulatorPage() {
                     <div className="round-label">3rd Place</div>
                     {knockoutBracket.thirdPlacePlayoff.map((matchup, matchupIndex) => (
                       <div key={matchupIndex} className="matchup-wrapper third-place-wrapper">
-                        <div className="matchup third-place-matchup">
+                        <div 
+                          className="matchup third-place-matchup clickable-matchup"
+                          onClick={() => {
+                            handleKnockoutMatchupClick('thirdPlacePlayoff', 0, matchupIndex);
+                          }}
+                          title="Click for more info"
+                        >
                           <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                             {matchup.team1 || 'TBD'}
                           </div>
@@ -1478,7 +1732,13 @@ function SimulatorPage() {
                               className="matchup-wrapper"
                               style={{ position: 'absolute', top: `${topPosition}px` }}
                             >
-                              <div className="matchup">
+                              <div 
+                                className="matchup clickable-matchup"
+                                onClick={() => {
+                                  handleKnockoutMatchupClick('right', roundIndex, matchupIndex);
+                                }}
+                                title="Click for more info"
+                              >
                                 <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                                   {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                                 </div>
@@ -1508,6 +1768,116 @@ function SimulatorPage() {
           </div>
         )}
       </div>
+
+      {/* Match Info Modal */}
+      {selectedMatchInfo && (
+        <div className="match-info-modal-overlay" onClick={() => setSelectedMatchInfo(null)}>
+          <div className="match-info-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="match-info-modal-close" onClick={() => setSelectedMatchInfo(null)}>×</button>
+            <h3>{selectedMatchInfo.allMatches ? `${selectedMatchInfo.stage} - All Matches` : 'Match Details'}</h3>
+            <div className="match-info-content">
+              {selectedMatchInfo.allMatches ? (
+                // Show all matches in the group
+                <div className="all-matches-list">
+                  {selectedMatchInfo.allMatches.map((match, idx) => (
+                    <div key={idx} className="match-item" onClick={() => {
+                      setSelectedMatchInfo({
+                        team1: match.team1,
+                        team2: match.team2,
+                        score1: match.score1,
+                        score2: match.score2,
+                        isDraw: match.isDraw,
+                        venue: match.venue,
+                        date: match.date,
+                        kickoffTime: match.kickoffTime,
+                        timezone: match.timezone,
+                        stage: selectedMatchInfo.stage,
+                        matchNumber: match.matchNumber
+                      });
+                    }}>
+                      <div className="match-item-header">
+                        <span className="match-number">Match {match.matchNumber || match.matchNumberInGroup}</span>
+                        <span className="match-teams">
+                          {getCountryCode(match.team1)} vs {getCountryCode(match.team2)}
+                        </span>
+                      </div>
+                      <div className="match-item-details">
+                        {match.venue && (
+                          <span>{match.venue.name}, {match.venue.city}</span>
+                        )}
+                        {match.date && match.kickoffTime && (
+                          <span>
+                            {new Date(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Show single match details
+                <>
+                  <div className="match-info-teams">
+                    <div className="match-info-team">
+                      {selectedMatchInfo.team1 ? getFullCountryName(selectedMatchInfo.team1) : 'TBD'}
+                    </div>
+                    <div className="match-info-vs">vs</div>
+                    <div className="match-info-team">
+                      {selectedMatchInfo.team2 ? getFullCountryName(selectedMatchInfo.team2) : 'TBD'}
+                    </div>
+                  </div>
+                  
+                  <div className="match-info-details">
+                    {(selectedMatchInfo.matchId || selectedMatchInfo.matchNumber) && (
+                      <div className="match-info-item">
+                        <span className="match-info-label">Match Number:</span>
+                        <span className="match-info-value">
+                          {selectedMatchInfo.matchId || selectedMatchInfo.matchNumber}
+                        </span>
+                      </div>
+                    )}
+                    <div className="match-info-item">
+                      <span className="match-info-label">Stage:</span>
+                      <span className="match-info-value">{selectedMatchInfo.stage}</span>
+                    </div>
+                    {selectedMatchInfo.venue && (
+                      <>
+                        <div className="match-info-item">
+                          <span className="match-info-label">Venue:</span>
+                          <span className="match-info-value">{selectedMatchInfo.venue.name}</span>
+                        </div>
+                        <div className="match-info-item">
+                          <span className="match-info-label">City:</span>
+                          <span className="match-info-value">{selectedMatchInfo.venue.city}</span>
+                        </div>
+                      </>
+                    )}
+                    {selectedMatchInfo.date && (
+                      <div className="match-info-item">
+                        <span className="match-info-label">Date:</span>
+                        <span className="match-info-value">
+                          {new Date(selectedMatchInfo.date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    {selectedMatchInfo.kickoffTime && (
+                      <div className="match-info-item">
+                        <span className="match-info-label">Kickoff Time:</span>
+                        <span className="match-info-value">{selectedMatchInfo.kickoffTime}{selectedMatchInfo.timezone ? ` ${selectedMatchInfo.timezone}` : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

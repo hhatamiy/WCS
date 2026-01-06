@@ -27,10 +27,26 @@ const MatchSchema = new mongoose.Schema(
       required: true,
     },
 
+    venue: {
+      name: { type: String },
+      city: { type: String }
+    },
+
+    kickoffTime: {
+      type: String, // e.g., "20:00"
+    },
+
+    matchNumber: {
+      type: Number, // For group stage matches (1-6)
+    },
+
     result: {
       homeScore: { type: Number, default: null },
       awayScore: { type: Number, default: null },
       winner: { type: mongoose.Schema.Types.ObjectId, ref: "Team", default: null }, // "Argentina", "Draw"
+      isPenalties: { type: Boolean, default: false },
+      penaltyHomeScore: { type: Number, default: null },
+      penaltyAwayScore: { type: Number, default: null }
     },
   },
   { timestamps: true }
