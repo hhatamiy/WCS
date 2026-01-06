@@ -1287,16 +1287,6 @@ function PredictorPage() {
                   onClick={() => handleGroupClick(groupName)}
                   title="Click for more info"
                 >
-                  <button
-                    className="group-info-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGroupInfoClick(groupName);
-                    }}
-                    title="View match schedule"
-                  >
-                    ℹ️
-                  </button>
                   <h3>Group {groupName}</h3>
                   <div className="group-teams">
                     {groups[groupName].teams.map((team, index) => {
