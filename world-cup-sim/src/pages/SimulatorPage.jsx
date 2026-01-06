@@ -1263,48 +1263,81 @@ function SimulatorPage() {
       stageName = roundNames[roundIndex] || 'Round of 32';
     }
     
+    // OPTIMIZATION: Fetch all odds for this round in parallel (like group stage)
+    console.log(`[KNOCKOUT] Fetching odds for ${stageName} (${round.length} matches) in parallel...`);
+    const oddsRequests = [];
+    const matchMetadata = [];
+    
     for (let i = 0; i < round.length; i++) {
       const matchup = round[i];
-      if (!matchup.team1 || !matchup.team2) continue;
-      if (matchup.winner) continue; // Already simulated
-
-      // Get match info from schedule
-      const matchInfo = getKnockoutMatchInfo(stageName);
-
-      try {
-        // Strip emojis and extra text from team names for API call
-        const cleanTeam1 = extractCountryName(matchup.team1);
-        const cleanTeam2 = extractCountryName(matchup.team2);
-        
-        const response = await api.get('/api/betting/odds', {
+      if (!matchup.team1 || !matchup.team2 || matchup.winner) {
+        oddsRequests.push(Promise.resolve(null)); // Skip if teams not set or already simulated
+        matchMetadata.push({ skip: true });
+        continue;
+      }
+      
+      const cleanTeam1 = extractCountryName(matchup.team1);
+      const cleanTeam2 = extractCountryName(matchup.team2);
+      
+      matchMetadata.push({ 
+        matchup, 
+        cleanTeam1, 
+        cleanTeam2,
+        index: i,
+        skip: false
+      });
+      
+      oddsRequests.push(
+        api.get('/api/betting/odds', {
           params: {
             team1: cleanTeam1,
             team2: cleanTeam2,
             type: 'matchup',
           },
-        });
+        }).catch(err => {
+          console.error(`Error fetching odds for ${cleanTeam1} vs ${cleanTeam2}:`, err);
+          return null;
+        })
+      );
+    }
+    
+    // Fetch all odds in parallel
+    const allOddsResponses = await Promise.all(oddsRequests);
+    console.log(`[KNOCKOUT] Fetched ${allOddsResponses.length} odds responses for ${stageName}`);
+    
+    // Now process all matches with pre-fetched odds
+    for (let i = 0; i < round.length; i++) {
+      const metadata = matchMetadata[i];
+      if (metadata.skip) continue;
+      
+      const matchup = metadata.matchup;
+      const response = allOddsResponses[i];
+      
+      // Get match info from schedule
+      const matchInfo = getKnockoutMatchInfo(stageName);
 
-        const odds = response.data;
+      try {
         let team1Prob = 0.5;
         let team2Prob = 0.5;
 
-        if (odds.odds && odds.odds.length > 0) {
-          const bookmaker = odds.odds[0];
-          if (bookmaker.markets && bookmaker.markets.length > 0) {
-            const market = bookmaker.markets[0];
-            if (market.outcomes) {
-              market.outcomes.forEach(outcome => {
-                if (outcome.isPenalty) return;
-                const outcomeName = extractCountryName(outcome.name);
-                const team1Name = cleanTeam1;
-                const team2Name = cleanTeam2;
-                
-                if (outcomeName === team1Name) {
-                  team1Prob = outcome.probability || 0.5;
-                } else if (outcomeName === team2Name) {
-                  team2Prob = outcome.probability || 0.5;
-                }
-              });
+        if (response && response.data) {
+          const odds = response.data;
+          if (odds.odds && odds.odds.length > 0) {
+            const bookmaker = odds.odds[0];
+            if (bookmaker.markets && bookmaker.markets.length > 0) {
+              const market = bookmaker.markets[0];
+              if (market.outcomes) {
+                market.outcomes.forEach(outcome => {
+                  if (outcome.isPenalty) return;
+                  const outcomeName = extractCountryName(outcome.name);
+                  
+                  if (outcomeName === metadata.cleanTeam1) {
+                    team1Prob = outcome.probability || 0.5;
+                  } else if (outcomeName === metadata.cleanTeam2) {
+                    team2Prob = outcome.probability || 0.5;
+                  }
+                });
+              }
             }
           }
         }
@@ -1339,12 +1372,12 @@ function SimulatorPage() {
         // Advance winner to next round
         if (side === 'final') {
           // Final winner is the champion
-          return;
+          continue;
         }
 
         if (side === 'thirdPlacePlayoff') {
           // Third place playoff winner is determined, no advancement needed
-          return;
+          continue;
         }
 
         const nextRoundIndex = roundIndex + 1;
@@ -1383,6 +1416,36 @@ function SimulatorPage() {
         matchup.score1 = 1;
         matchup.score2 = 0;
         matchup.winner = matchup.team1;
+        
+        // Still need to advance winner even on error
+        if (side !== 'final' && side !== 'thirdPlacePlayoff') {
+          const nextRoundIndex = roundIndex + 1;
+          if (nextRoundIndex >= bracket[side].length) {
+            const finalMatchup = bracket.final[0];
+            const finalPosition = side === 'left' ? 'team1' : 'team2';
+            if (!finalMatchup[finalPosition]) {
+              finalMatchup[finalPosition] = matchup.winner;
+            }
+            const losingTeam = matchup.team2;
+            if (losingTeam) {
+              if (!bracket.thirdPlacePlayoff) {
+                bracket.thirdPlacePlayoff = [{ team1: null, team2: null, winner: null, score1: null, score2: null }];
+              }
+              const thirdPlaceMatchup = bracket.thirdPlacePlayoff[0];
+              const thirdPlacePosition = side === 'left' ? 'team1' : 'team2';
+              if (!thirdPlaceMatchup[thirdPlacePosition]) {
+                thirdPlaceMatchup[thirdPlacePosition] = losingTeam;
+              }
+            }
+          } else {
+            const nextMatchupIndex = Math.floor(i / 2);
+            const nextMatchup = bracket[side][nextRoundIndex][nextMatchupIndex];
+            const positionInNextMatchup = i % 2 === 0 ? 'team1' : 'team2';
+            if (!nextMatchup[positionInNextMatchup]) {
+              nextMatchup[positionInNextMatchup] = matchup.winner;
+            }
+          }
+        }
       }
     }
   };
