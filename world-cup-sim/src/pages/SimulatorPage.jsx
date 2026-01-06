@@ -825,6 +825,50 @@ function SimulatorPage() {
     const newMatches = {};
 
     try {
+      // OPTIMIZATION: Fetch all odds in parallel first (instead of sequentially)
+      console.log('[SIMULATION] Fetching all match odds in parallel...');
+      const startTime = Date.now();
+      
+      const allMatchRequests = [];
+      const matchMetadata = [];
+      
+      for (const groupName of Object.keys(groups)) {
+        const group = groups[groupName];
+        const teamNames = group.teams.map(t => t.name);
+        
+        const matchOrder = [
+          [0, 1], // 1 vs 2
+          [2, 3], // 3 vs 4
+          [3, 1], // 4 vs 2
+          [0, 2], // 1 vs 3
+          [3, 0], // 4 vs 1
+          [1, 2]  // 2 vs 3
+        ];
+        
+        for (let matchIdx = 0; matchIdx < matchOrder.length; matchIdx++) {
+          const [idx1, idx2] = matchOrder[matchIdx];
+          const team1 = teamNames[idx1];
+          const team2 = teamNames[idx2];
+          
+          matchMetadata.push({ groupName, team1, team2, matchIdx, teamNames });
+          allMatchRequests.push(
+            api.get('/api/betting/odds', {
+              params: { team1, team2, type: 'group' }
+            }).catch(err => {
+              console.error(`Error fetching odds for ${team1} vs ${team2}:`, err);
+              return null; // Return null on error to continue
+            })
+          );
+        }
+      }
+      
+      // Fetch all odds in parallel
+      const allOddsResponses = await Promise.all(allMatchRequests);
+      const fetchTime = Date.now() - startTime;
+      console.log(`[SIMULATION] Fetched ${allOddsResponses.length} match odds in ${fetchTime}ms (parallel)`);
+      
+      // Now process all matches with pre-fetched odds
+      let matchIndex = 0;
       for (const groupName of Object.keys(groups)) {
         const group = groups[groupName];
         const teamNames = group.teams.map(t => t.name);
@@ -847,13 +891,6 @@ function SimulatorPage() {
 
         const matches = [];
 
-        // FIFA 2026 World Cup official match order for group stage
-        // Match 1: Position 1 vs Position 2
-        // Match 2: Position 3 vs Position 4
-        // Match 3: Position 4 vs Position 2
-        // Match 4: Position 1 vs Position 3
-        // Match 5: Position 4 vs Position 1
-        // Match 6: Position 2 vs Position 3
         const matchOrder = [
           [0, 1], // 1 vs 2
           [2, 3], // 3 vs 4
@@ -863,7 +900,7 @@ function SimulatorPage() {
           [1, 2]  // 2 vs 3
         ];
 
-        // Simulate all 6 matches in FIFA's official order
+        // Process all 6 matches in FIFA's official order
         for (let matchIdx = 0; matchIdx < matchOrder.length; matchIdx++) {
           const [idx1, idx2] = matchOrder[matchIdx];
           const team1 = teamNames[idx1];
@@ -875,14 +912,11 @@ function SimulatorPage() {
           const matchInfo = getGroupMatchInfo(`Group ${groupName}`, matchNumberInGroup);
 
             try {
-              // Get match probabilities from API
-              const response = await api.get('/api/betting/odds', {
-                params: {
-                  team1: team1,
-                  team2: team2,
-                  type: 'group',
-                },
-              });
+              // Use pre-fetched odds response
+              const response = allOddsResponses[matchIndex++];
+              if (!response) {
+                throw new Error('No odds response available');
+              }
 
               const odds = response.data;
               let team1Prob = 0.33;
@@ -1419,6 +1453,18 @@ function SimulatorPage() {
                 : 'Click "Simulate Group Stage" to simulate all matches and calculate standings.'}
             </p>
             
+            {!simulatedGroups && (
+              <p className="performance-note" style={{ 
+                fontSize: '0.9em', 
+                color: '#ffa726', 
+                marginTop: '10px',
+                marginBottom: '10px',
+                fontStyle: 'italic'
+              }}>
+                Note: Initial simulation may take up to 10 seconds while calculating probabilities for all matches.
+              </p>
+            )}
+            
             <div className="action-section">
               <button 
                 onClick={simulateGroupStage} 
@@ -1734,6 +1780,17 @@ function SimulatorPage() {
                   )}
                 </div>
                 <div className="simulate-knockout-button" style={{ marginBottom: '15px' }}>
+                  {!simulatedKnockout && (
+                    <p style={{ 
+                      fontSize: '0.85em', 
+                      color: '#ffa726', 
+                      marginBottom: '10px',
+                      fontStyle: 'italic',
+                      textAlign: 'center'
+                    }}>
+                      Note: Simulation may take several seconds
+                    </p>
+                  )}
                   <button 
                     onClick={simulateKnockoutStage} 
                     className="simulate-btn"

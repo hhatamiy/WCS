@@ -1,6 +1,7 @@
 // backend/routes/betting.js
 import express from 'express';
 import axios from 'axios';
+import { getCachedOdds, setCachedOdds, clearCache, getCacheStats } from '../utils/cacheManager.js';
 
 const router = express.Router();
 
@@ -323,7 +324,11 @@ function normalizeTeamName(countryName) {
 }
 
 // Monte Carlo simulation to calculate group winner probabilities
-function simulateGroupWinner(groupTeams, numSimulations = 10000) {
+// Optimized with adaptive iteration count and early convergence detection
+function simulateGroupWinner(groupTeams, numSimulations = null) {
+  const simStartTime = Date.now();
+  console.log(`[SIMULATION] Starting group winner simulation for ${groupTeams.length} teams`);
+  
   // Create deterministic seed from team names
   const seed = createSeedFromTeams(groupTeams);
   const rng = new SeededRandom(seed);
@@ -340,7 +345,17 @@ function simulateGroupWinner(groupTeams, numSimulations = 10000) {
     };
   });
 
-  // Simulate group stage (each team plays 3 matches)
+  // Adaptive iteration count: base 3000, increase to 5000 for close matchups
+  // Check if teams are close (within 100 FIFA points)
+  const points = teamRankings.map(t => t.points).sort((a, b) => b - a);
+  const maxDiff = points[0] - points[points.length - 1];
+  const isCloseGroup = maxDiff < 100;
+  const baseIterations = numSimulations || (isCloseGroup ? 5000 : 3000);
+  const minIterations = 2000; // Minimum to ensure accuracy
+  const convergenceWindow = 500; // Check convergence over last 500 iterations
+  const convergenceThreshold = 0.005; // 0.5% change threshold
+
+  // Pre-allocate results object
   const results = {};
   teamRankings.forEach(team => {
     results[team.name] = {
@@ -352,8 +367,13 @@ function simulateGroupWinner(groupTeams, numSimulations = 10000) {
     };
   });
 
-  // Run simulations
-  for (let sim = 0; sim < numSimulations; sim++) {
+  // Track probabilities for convergence detection
+  const recentProbs = [];
+  let converged = false;
+  let actualIterations = 0;
+
+  // Run simulations with early convergence detection
+  for (let sim = 0; sim < baseIterations && !converged; sim++) {
     // Reset for each simulation
     const simResults = {};
     teamRankings.forEach(team => {
@@ -408,18 +428,57 @@ function simulateGroupWinner(groupTeams, numSimulations = 10000) {
     if (winner) {
       results[winner].wins++;
     }
+
+    actualIterations = sim + 1;
+
+    // Early convergence detection (after minimum iterations)
+    if (actualIterations >= minIterations && actualIterations % convergenceWindow === 0) {
+      // Calculate current probabilities
+      const currentProbs = {};
+      teamRankings.forEach(team => {
+        currentProbs[team.name] = results[team.name].wins / actualIterations;
+      });
+
+      // Compare with previous window
+      if (recentProbs.length > 0) {
+        let maxChange = 0;
+        teamRankings.forEach(team => {
+          const prevProb = recentProbs[recentProbs.length - 1][team.name] || 0;
+          const currProb = currentProbs[team.name];
+          const change = Math.abs(currProb - prevProb);
+          if (change > maxChange) {
+            maxChange = change;
+          }
+        });
+
+        // If max change is below threshold, we've converged
+        if (maxChange < convergenceThreshold) {
+          converged = true;
+          console.log(`Group simulation converged early at ${actualIterations} iterations (max change: ${(maxChange * 100).toFixed(2)}%)`);
+        }
+      }
+
+      // Store current probabilities for next comparison
+      recentProbs.push({ ...currentProbs });
+      if (recentProbs.length > 2) {
+        recentProbs.shift(); // Keep only last 2 windows
+      }
+    }
   }
 
-  // Calculate probabilities
+  // Calculate final probabilities
   const groupWinnerProbs = {};
   teamRankings.forEach(team => {
-    const prob = results[team.name].wins / numSimulations;
+    const prob = results[team.name].wins / actualIterations;
     groupWinnerProbs[team.name] = {
       probability: prob,
       odds: probabilityToAmericanOdds(prob),
       rank: teamRankings.find(t => t.name === team.name)?.rank
     };
   });
+
+  const totalSimTime = Date.now() - simStartTime;
+  console.log(`[SIMULATION] Group winner simulation completed: ${actualIterations} iterations in ${totalSimTime}ms (${(actualIterations/totalSimTime).toFixed(0)} iter/ms)`);
 
   return groupWinnerProbs;
 }
@@ -435,7 +494,10 @@ function probabilityToAmericanOdds(probability) {
 }
 
 // Monte Carlo simulation to generate betting odds
-function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isKnockout = false, rng = null) {
+// Optimized with adaptive iteration count and early convergence detection
+function simulateMatchOdds(team1Points, team2Points, numSimulations = null, isKnockout = false, rng = null) {
+  const matchSimStart = Date.now();
+  
   if (!team1Points || !team2Points) {
     return null;
   }
@@ -456,20 +518,37 @@ function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isK
   const expectedScore1 = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400));
   const expectedScore2 = 1 / (1 + Math.pow(10, (rating1 - rating2) / 400));
   
+  // Adaptive iteration count: base 3000, increase to 5000 for close matchups
+  const ratingDiff = Math.abs(rating1 - rating2);
+  const isCloseMatch = ratingDiff < 100;
+  const baseIterations = numSimulations || (isCloseMatch ? 5000 : 3000);
+  const minIterations = 2000; // Minimum to ensure accuracy
+  const convergenceWindow = 500; // Check convergence over last 500 iterations
+  const convergenceThreshold = 0.005; // 0.5% change threshold
+  
   if (isKnockout) {
     // Knockout stage: no draws, but include penalty shootout probabilities
     // Probability of going to penalties (extra time draw)
-    const ratingDiff = Math.abs(rating1 - rating2);
     const penaltyProbability = Math.max(0.10, 0.25 - (ratingDiff / 2000)); // 10-25% chance of penalties
     
-    // Run Monte Carlo simulation for knockout
+    // Pre-allocate counters
     let team1WinsRegulation = 0;
     let team2WinsRegulation = 0;
     let goesToPenalties = 0;
     let team1WinsPenalties = 0;
     let team2WinsPenalties = 0;
     
-    for (let i = 0; i < numSimulations; i++) {
+    // Track probabilities for convergence detection
+    const recentProbs = {
+      team1: [],
+      team2: [],
+      penalties: []
+    };
+    let converged = false;
+    let actualIterations = 0;
+    
+    // Run Monte Carlo simulation with early convergence
+    for (let i = 0; i < baseIterations && !converged; i++) {
       const random = rng.random();
       
       if (random < expectedScore1 * (1 - penaltyProbability)) {
@@ -489,13 +568,45 @@ function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isK
           team2WinsPenalties++;
         }
       }
+
+      actualIterations = i + 1;
+
+      // Early convergence detection (after minimum iterations)
+      if (actualIterations >= minIterations && actualIterations % convergenceWindow === 0) {
+        const probTeam1 = (team1WinsRegulation + team1WinsPenalties) / actualIterations;
+        const probTeam2 = (team2WinsRegulation + team2WinsPenalties) / actualIterations;
+        const probPen = goesToPenalties / actualIterations;
+
+        if (recentProbs.team1.length > 0) {
+          const prevProb1 = recentProbs.team1[recentProbs.team1.length - 1];
+          const prevProb2 = recentProbs.team2[recentProbs.team2.length - 1];
+          const maxChange = Math.max(
+            Math.abs(probTeam1 - prevProb1),
+            Math.abs(probTeam2 - prevProb2)
+          );
+
+          if (maxChange < convergenceThreshold) {
+            converged = true;
+            console.log(`Match simulation converged early at ${actualIterations} iterations (max change: ${(maxChange * 100).toFixed(2)}%)`);
+          }
+        }
+
+        recentProbs.team1.push(probTeam1);
+        recentProbs.team2.push(probTeam2);
+        recentProbs.penalties.push(probPen);
+        if (recentProbs.team1.length > 2) {
+          recentProbs.team1.shift();
+          recentProbs.team2.shift();
+          recentProbs.penalties.shift();
+        }
+      }
     }
     
-    const probTeam1Regulation = team1WinsRegulation / numSimulations;
-    const probTeam2Regulation = team2WinsRegulation / numSimulations;
-    const probPenalties = goesToPenalties / numSimulations;
-    const probTeam1Penalties = team1WinsPenalties / numSimulations;
-    const probTeam2Penalties = team2WinsPenalties / numSimulations;
+    const probTeam1Regulation = team1WinsRegulation / actualIterations;
+    const probTeam2Regulation = team2WinsRegulation / actualIterations;
+    const probPenalties = goesToPenalties / actualIterations;
+    const probTeam1Penalties = team1WinsPenalties / actualIterations;
+    const probTeam2Penalties = team2WinsPenalties / actualIterations;
     
     // Total win probabilities (regulation + penalties)
     const probTeam1Total = probTeam1Regulation + probTeam1Penalties;
@@ -526,20 +637,29 @@ function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isK
       isKnockout: true
     };
   } else {
-    // Group stage: includes draws (unchanged)
-    const ratingDiff = Math.abs(rating1 - rating2);
+    // Group stage: includes draws
     const drawProbability = Math.max(0.15, 0.30 - (ratingDiff / 2000)); // 15-30% draw probability
     
     // Adjust win probabilities to account for draws
     const adjustedWinProb1 = expectedScore1 * (1 - drawProbability);
     const adjustedWinProb2 = expectedScore2 * (1 - drawProbability);
     
-    // Run Monte Carlo simulation
+    // Pre-allocate counters
     let team1Wins = 0;
     let team2Wins = 0;
     let draws = 0;
     
-    for (let i = 0; i < numSimulations; i++) {
+    // Track probabilities for convergence detection
+    const recentProbs = {
+      team1: [],
+      team2: [],
+      draw: []
+    };
+    let converged = false;
+    let actualIterations = 0;
+    
+    // Run Monte Carlo simulation with early convergence
+    for (let i = 0; i < baseIterations && !converged; i++) {
       const random = rng.random();
       
       if (random < adjustedWinProb1) {
@@ -549,12 +669,51 @@ function simulateMatchOdds(team1Points, team2Points, numSimulations = 10000, isK
       } else {
         draws++;
       }
+
+      actualIterations = i + 1;
+
+      // Early convergence detection (after minimum iterations)
+      if (actualIterations >= minIterations && actualIterations % convergenceWindow === 0) {
+        const probTeam1 = team1Wins / actualIterations;
+        const probTeam2 = team2Wins / actualIterations;
+        const probDraw = draws / actualIterations;
+
+        if (recentProbs.team1.length > 0) {
+          const prevProb1 = recentProbs.team1[recentProbs.team1.length - 1];
+          const prevProb2 = recentProbs.team2[recentProbs.team2.length - 1];
+          const prevProbDraw = recentProbs.draw[recentProbs.draw.length - 1];
+          const maxChange = Math.max(
+            Math.abs(probTeam1 - prevProb1),
+            Math.abs(probTeam2 - prevProb2),
+            Math.abs(probDraw - prevProbDraw)
+          );
+
+          if (maxChange < convergenceThreshold) {
+            converged = true;
+            console.log(`Match simulation converged early at ${actualIterations} iterations (max change: ${(maxChange * 100).toFixed(2)}%)`);
+          }
+        }
+
+        recentProbs.team1.push(probTeam1);
+        recentProbs.team2.push(probTeam2);
+        recentProbs.draw.push(probDraw);
+        if (recentProbs.team1.length > 2) {
+          recentProbs.team1.shift();
+          recentProbs.team2.shift();
+          recentProbs.draw.shift();
+        }
+      }
     }
     
     // Calculate probabilities from simulation results
-    const probTeam1 = team1Wins / numSimulations;
-    const probTeam2 = team2Wins / numSimulations;
-    const probDraw = draws / numSimulations;
+    const probTeam1 = team1Wins / actualIterations;
+    const probTeam2 = team2Wins / actualIterations;
+    const probDraw = draws / actualIterations;
+    
+    const matchSimTime = Date.now() - matchSimStart;
+    if (matchSimTime > 50) { // Only log if it takes more than 50ms
+      console.log(`[MATCH-SIM] Match odds simulation: ${actualIterations} iterations in ${matchSimTime}ms`);
+    }
     
     return {
       team1: {
@@ -595,12 +754,25 @@ const SOCCER_SPORT_KEYS = [
 // POST endpoint to clear the probability cache (e.g., when FIFA rankings are updated)
 router.post('/clear-cache', async (req, res) => {
   try {
-    probabilityCache.groupWinners = {};
-    probabilityCache.matchOdds = {};
-    console.log('Probability cache cleared');
+    const { type } = req.body; // Optional: 'group-winner', 'match-odds', or null for all
+    
+    // Clear MongoDB cache
+    const result = await clearCache(type || null);
+    
+    // Also clear in-memory cache for backward compatibility
+    if (!type || type === 'group-winner') {
+      probabilityCache.groupWinners = {};
+    }
+    if (!type || type === 'match-odds') {
+      probabilityCache.matchOdds = {};
+    }
+    
+    console.log('Probability cache cleared (MongoDB + in-memory)');
     
     return res.json({
       message: 'Probability cache cleared successfully',
+      deletedCount: result.deletedCount,
+      type: result.type,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -615,7 +787,11 @@ router.post('/clear-cache', async (req, res) => {
 // GET cache statistics
 router.get('/cache-stats', async (req, res) => {
   try {
-    return res.json({
+    // Get MongoDB cache stats
+    const mongoStats = await getCacheStats();
+    
+    // Also include in-memory cache stats for backward compatibility
+    const memoryStats = {
       groupWinners: {
         count: Object.keys(probabilityCache.groupWinners).length,
         keys: Object.keys(probabilityCache.groupWinners)
@@ -624,6 +800,11 @@ router.get('/cache-stats', async (req, res) => {
         count: Object.keys(probabilityCache.matchOdds).length,
         keys: Object.keys(probabilityCache.matchOdds)
       }
+    };
+    
+    return res.json({
+      mongodb: mongoStats,
+      memory: memoryStats
     });
   } catch (error) {
     console.error('Error getting cache stats:', error);
@@ -636,6 +817,9 @@ router.get('/cache-stats', async (req, res) => {
 
 // GET group winner probabilities
 router.get('/group-winner', async (req, res) => {
+  const startTime = Date.now();
+  console.log(`\n[GROUP-WINNER] ========== START REQUEST ==========`);
+  
   try {
     const { groupName, teams } = req.query;
 
@@ -648,23 +832,66 @@ router.get('/group-winner', async (req, res) => {
       return res.status(400).json({ message: 'Must provide exactly 4 teams' });
     }
 
-    // Create cache key from teams
-    const cacheKey = getCacheKey(teamArray);
+    console.log(`[GROUP-WINNER] Request for Group ${groupName}: ${teamArray.join(', ')}`);
+
+    // Extract country names for cache key
+    const t1 = Date.now();
+    const countryNames = teamArray.map(team => extractCountryName(team));
+    console.log(`[GROUP-WINNER] Country extraction took: ${Date.now() - t1}ms`);
     
-    // Check if we have cached probabilities for this group
+    // Check MongoDB cache first
+    console.log(`[GROUP-WINNER] Checking MongoDB cache...`);
+    const t2 = Date.now();
+    let cachedData = await getCachedOdds(countryNames, 'group-winner', false);
+    console.log(`[GROUP-WINNER] MongoDB cache check took: ${Date.now() - t2}ms`);
+    
+    if (cachedData) {
+      const totalTime = Date.now() - startTime;
+      console.log(`[GROUP-WINNER] Returning MongoDB cached data - TOTAL TIME: ${totalTime}ms`);
+      console.log(`[GROUP-WINNER] ========== END REQUEST (CACHED) ==========\n`);
+      return res.json({
+        groupName: groupName,
+        probabilities: cachedData,
+        cached: true,
+        cacheSource: 'mongodb'
+      });
+    }
+
+    // Check in-memory cache as fallback (backward compatibility)
+    console.log(`[GROUP-WINNER] Checking in-memory cache...`);
+    const cacheKey = getCacheKey(teamArray);
     if (probabilityCache.groupWinners[cacheKey]) {
-      console.log(`Returning cached group winner probabilities for: ${cacheKey}`);
+      const totalTime = Date.now() - startTime;
+      console.log(`[GROUP-WINNER] Returning in-memory cached data - TOTAL TIME: ${totalTime}ms`);
+      console.log(`[GROUP-WINNER] ========== END REQUEST (MEMORY) ==========\n`);
       return res.json({
         groupName: groupName,
         probabilities: probabilityCache.groupWinners[cacheKey],
-        cached: true
+        cached: true,
+        cacheSource: 'memory'
       });
     }
 
     // Calculate and cache the probabilities
-    console.log(`Calculating new group winner probabilities for: ${cacheKey}`);
+    console.log(`[GROUP-WINNER] Cache miss - running simulation for: ${cacheKey}`);
+    const t3 = Date.now();
     const groupWinnerProbs = simulateGroupWinner(teamArray);
+    const simulationTime = Date.now() - t3;
+    console.log(`[GROUP-WINNER] Simulation completed in: ${simulationTime}ms`);
+    
+    // Store in MongoDB cache (non-blocking - fire and forget)
+    console.log(`[GROUP-WINNER] Storing in MongoDB cache (background)...`);
+    setCachedOdds(countryNames, 'group-winner', groupWinnerProbs, false).catch(err => {
+      console.error('[GROUP-WINNER] Background cache store failed:', err.message);
+    });
+    
+    // Also store in-memory cache for backward compatibility
     probabilityCache.groupWinners[cacheKey] = groupWinnerProbs;
+    console.log(`[GROUP-WINNER] Stored in memory cache`);
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[GROUP-WINNER] TOTAL REQUEST TIME: ${totalTime}ms (simulation: ${simulationTime}ms)`);
+    console.log(`[GROUP-WINNER] ========== END REQUEST (NEW) ==========\n`);
     
     return res.json({
       groupName: groupName,
@@ -672,7 +899,9 @@ router.get('/group-winner', async (req, res) => {
       cached: false
     });
   } catch (error) {
-    console.error('Error calculating group winner probabilities:', error);
+    const totalTime = Date.now() - startTime;
+    console.error(`[GROUP-WINNER] ERROR after ${totalTime}ms:`, error);
+    console.log(`[GROUP-WINNER] ========== END REQUEST (ERROR) ==========\n`);
     res.status(500).json({ 
       message: 'Failed to calculate group winner probabilities', 
       error: error.message 
@@ -709,20 +938,34 @@ router.get('/odds', async (req, res) => {
     let bookmakers = [];
     
     if (ranking1 && ranking2 && ranking1.points && ranking2.points) {
-      // Create cache key for this matchup
-      const matchCacheKey = `${getCacheKey([country1, country2])}_${isKnockout ? 'knockout' : 'group'}`;
+      // Check MongoDB cache first
+      const teamsArray = [country1, country2];
+      let cachedData = await getCachedOdds(teamsArray, 'match-odds', isKnockout);
       
-      // Check cache first
-      if (probabilityCache.matchOdds[matchCacheKey]) {
-        console.log(`Returning cached match odds for: ${matchCacheKey}`);
-        simulatedOdds = probabilityCache.matchOdds[matchCacheKey];
+      if (cachedData) {
+        console.log(`Returning MongoDB cached match odds`);
+        simulatedOdds = cachedData;
       } else {
-        // Calculate and cache
-        console.log(`Calculating new match odds for: ${matchCacheKey}`);
-        const seed = createSeedFromTeams([country1, country2]);
-        const rng = new SeededRandom(seed);
-        simulatedOdds = simulateMatchOdds(ranking1.points, ranking2.points, 10000, isKnockout, rng);
-        probabilityCache.matchOdds[matchCacheKey] = simulatedOdds;
+        // Check in-memory cache as fallback (backward compatibility)
+        const matchCacheKey = `${getCacheKey(teamsArray)}_${isKnockout ? 'knockout' : 'group'}`;
+        if (probabilityCache.matchOdds[matchCacheKey]) {
+          console.log(`Returning in-memory cached match odds for: ${matchCacheKey}`);
+          simulatedOdds = probabilityCache.matchOdds[matchCacheKey];
+        } else {
+          // Calculate and cache
+          console.log(`Calculating new match odds for: ${matchCacheKey}`);
+          const seed = createSeedFromTeams([country1, country2]);
+          const rng = new SeededRandom(seed);
+          simulatedOdds = simulateMatchOdds(ranking1.points, ranking2.points, null, isKnockout, rng);
+          
+          // Store in MongoDB cache (non-blocking - fire and forget)
+          setCachedOdds(teamsArray, 'match-odds', simulatedOdds, isKnockout).catch(err => {
+            console.error('Background cache store failed:', err.message);
+          });
+          
+          // Also store in-memory cache for backward compatibility
+          probabilityCache.matchOdds[matchCacheKey] = simulatedOdds;
+        }
       }
       
       if (simulatedOdds) {
