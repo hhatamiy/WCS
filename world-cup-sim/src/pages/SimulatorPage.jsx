@@ -1658,7 +1658,7 @@ function SimulatorPage() {
                             onClick={() => handleMatchClick(groupName, idx, match)}
                             title="Click for more info"
                           >
-                            {getCountryCode(match.team1)} {match.score1} - {match.score2} {getCountryCode(match.team2)}
+                            {getCountryCode(match.team1)} {match.score1 ?? 0} - {match.score2 ?? 0} {getCountryCode(match.team2)}
                           </div>
                         ))}
                       </div>
@@ -1807,10 +1807,14 @@ function SimulatorPage() {
                               <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                                 {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                               </div>
-                              {simulatedKnockout && matchup.score1 !== null ? (
+                              {simulatedKnockout && matchup.score1 !== null && matchup.score1 !== undefined && matchup.score2 !== null && matchup.score2 !== undefined ? (
                                 <div className="match-score">
-                                  {matchup.score1} - {matchup.score2}
-                                  {matchup.isPenalties && (
+                                  {matchup.score1 ?? 0} - {matchup.score2 ?? 0}
+                                  {matchup.isPenalties && 
+                                   matchup.penaltyScore1 !== null && 
+                                   matchup.penaltyScore1 !== undefined &&
+                                   matchup.penaltyScore2 !== null && 
+                                   matchup.penaltyScore2 !== undefined && (
                                     <span className="penalty-notation"> ({matchup.penaltyScore1}-{matchup.penaltyScore2} pens)</span>
                                   )}
                                 </div>
@@ -1875,10 +1879,14 @@ function SimulatorPage() {
                       <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''} ${champion === matchup.team1 ? 'champion' : ''}`}>
                         {matchup.team1 ? getFullCountryName(matchup.team1) : 'TBD'}
                       </div>
-                      {simulatedKnockout && matchup.score1 !== null ? (
+                      {simulatedKnockout && matchup.score1 !== null && matchup.score1 !== undefined && matchup.score2 !== null && matchup.score2 !== undefined ? (
                         <div className="match-score">
-                          {matchup.score1} - {matchup.score2}
-                          {matchup.isPenalties && (
+                          {matchup.score1 ?? 0} - {matchup.score2 ?? 0}
+                          {matchup.isPenalties && 
+                           matchup.penaltyScore1 !== null && 
+                           matchup.penaltyScore1 !== undefined &&
+                           matchup.penaltyScore2 !== null && 
+                           matchup.penaltyScore2 !== undefined && (
                             <span className="penalty-notation"> ({matchup.penaltyScore1}-{matchup.penaltyScore2} pens)</span>
                           )}
                         </div>
@@ -1913,10 +1921,14 @@ function SimulatorPage() {
                           <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                             {matchup.team1 || 'TBD'}
                           </div>
-                          {simulatedKnockout && matchup.score1 !== null ? (
+                          {simulatedKnockout && matchup.score1 !== null && matchup.score1 !== undefined && matchup.score2 !== null && matchup.score2 !== undefined ? (
                             <div className="match-score">
-                              {matchup.score1} - {matchup.score2}
-                              {matchup.isPenalties && (
+                              {matchup.score1 ?? 0} - {matchup.score2 ?? 0}
+                              {matchup.isPenalties && 
+                               matchup.penaltyScore1 !== null && 
+                               matchup.penaltyScore1 !== undefined &&
+                               matchup.penaltyScore2 !== null && 
+                               matchup.penaltyScore2 !== undefined && (
                                 <span className="penalty-notation"> ({matchup.penaltyScore1}-{matchup.penaltyScore2} pens)</span>
                               )}
                             </div>
@@ -1965,10 +1977,14 @@ function SimulatorPage() {
                                 <div className={`team ${!matchup.team1 ? 'empty' : ''} ${matchup.winner === matchup.team1 ? 'winner set' : matchup.winner ? 'loser set' : matchup.team2 ? 'wait' : ''}`}>
                                   {matchup.team1 ? getCountryCode(matchup.team1) : 'TBD'}
                                 </div>
-                                {simulatedKnockout && matchup.score1 !== null ? (
+                                {simulatedKnockout && matchup.score1 !== null && matchup.score1 !== undefined && matchup.score2 !== null && matchup.score2 !== undefined ? (
                                   <div className="match-score">
-                                    {matchup.score1} - {matchup.score2}
-                                    {matchup.isPenalties && (
+                                    {matchup.score1 ?? 0} - {matchup.score2 ?? 0}
+                                    {matchup.isPenalties && 
+                                     matchup.penaltyScore1 !== null && 
+                                     matchup.penaltyScore1 !== undefined &&
+                                     matchup.penaltyScore2 !== null && 
+                                     matchup.penaltyScore2 !== undefined && (
                                       <span className="penalty-notation"> ({matchup.penaltyScore1}-{matchup.penaltyScore2} pens)</span>
                                     )}
                                   </div>
@@ -2082,10 +2098,15 @@ function SimulatorPage() {
                     </div>
                   </div>
                   
-                  {(selectedMatchInfo.score1 !== null || selectedMatchInfo.score2 !== null) && (
+                  {(selectedMatchInfo.score1 !== null && selectedMatchInfo.score1 !== undefined) && 
+                   (selectedMatchInfo.score2 !== null && selectedMatchInfo.score2 !== undefined) && (
                     <div className="match-info-score">
-                      Score: {selectedMatchInfo.score1} - {selectedMatchInfo.score2}
-                      {selectedMatchInfo.isPenalties && (
+                      Score: {selectedMatchInfo.score1 ?? 0} - {selectedMatchInfo.score2 ?? 0}
+                      {selectedMatchInfo.isPenalties && 
+                       selectedMatchInfo.penaltyScore1 !== null && 
+                       selectedMatchInfo.penaltyScore1 !== undefined &&
+                       selectedMatchInfo.penaltyScore2 !== null && 
+                       selectedMatchInfo.penaltyScore2 !== undefined && (
                         <span className="penalty-notation"> ({selectedMatchInfo.penaltyScore1}-{selectedMatchInfo.penaltyScore2} pens)</span>
                       )}
                     </div>
