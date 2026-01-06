@@ -1,96 +1,216 @@
-# World Cup Draw Simulator
+# World Cup 2026 Simulator & Predictor
 
-A React-based frontend application for simulating and managing World Cup tournament draws for fans who want to prove their knowledge by predicting the group stages and bracket, similar to [2026 World Cup Sim](https://www.2026worldcupsim.com/). 
+A comprehensive React-based web application for predicting, simulating, and analyzing the FIFA World Cup 2026 tournament. Built for soccer fans who want to test their knowledge and make detailed predictions about the new 48-team format.
 
-Problem Solved: Since there is a new format for the world cup this year, many of the previous websites that were used for bracket prediction no longer work. This website is built to fill in that gap by making it work for the new format along with giving information like stats and betting odds to help users make predictions.
+## 🚀 Live Deployment
 
-Target Audience: Soccer fans who want to prove they can predict the world cup better than others.
+The application is deployed and available at:
+
+- **Frontend (Vercel)**: [https://world-cup-sim.vercel.app/](https://world-cup-sim.vercel.app/)
+- **Backend (Render)**: [https://wcs-u1fy.onrender.com](https://wcs-u1fy.onrender.com)
+
+> **Note**: The backend may take 30-60 seconds to respond on the first request if it's been idle (free tier spin-down). Subsequent requests will be faster.
+
+## Problem Statement
+
+The 2026 World Cup introduces a new 48-team format with 12 groups of 4 teams, followed by a Round of 32 knockout stage. Many existing bracket prediction websites don't support this new format. This application fills that gap by providing:
+
+- Full support for the new 48-team format
+- Accurate FIFA-compliant knockout bracket generation
+- Real-time betting odds and probability calculations
+- Match schedule integration
+- Tournament simulation capabilities
+
+## Target Audience
+
+Soccer fans, World Cup enthusiasts, and bracket challenge participants who want to:
+- Make detailed predictions for the 2026 World Cup
+- Simulate tournament outcomes
+- Analyze betting odds and probabilities
+- Track match schedules and fixtures
+- Test their knowledge against AI-powered analysis
+
+## Key Features
+
+### 🎯 Predictor Page
+The main prediction interface where users can make comprehensive tournament predictions:
+
+- **Group Stage Predictions**
+  - Predict standings for all 12 groups (A-L)
+  - Select 1st, 2nd, and 3rd place teams for each group
+  - Visual group tables with team flags and positions
+  - Support for teams that haven't qualified yet (with alternatives)
+
+- **Third-Place Ranking**
+  - Select which 8 third-place teams advance to Round of 32
+  - Visual interface showing all 12 third-place teams
+  - Automatic knockout bracket generation based on selections
+
+- **Knockout Bracket Predictions**
+  - Complete bracket visualization (Round of 32 → Final)
+  - FIFA-compliant matchup algorithm (495 possible combinations)
+  - Click-to-select winners for each matchup
+  - Third-place playoff prediction
+  - Champion selection
+  - Match schedule integration with dates, times, and venues
+
+- **Betting Odds Integration**
+  - View odds for any matchup directly from the bracket
+  - See probabilities for group winners
+  - Monte Carlo simulation-based odds
+  - FIFA rankings integration
+
+- **Save & Load**
+  - Automatic local storage of predictions
+  - Resume predictions across sessions
+  - Reset functionality
+
+### 🎲 Simulator Page
+Simulate complete tournament outcomes with realistic results:
+
+- **Monte Carlo Simulation**
+  - Simulate entire tournament from group stage to final
+  - Generate realistic scores based on team strengths
+  - Probability-weighted outcomes
+  - Multiple simulation runs
+
+- **Visual Results**
+  - See simulated group standings
+  - View simulated knockout bracket
+  - Track simulated match results
+  - Compare predictions vs. simulations
+
+### 📊 Betting Odds Page
+Comprehensive odds and probability analysis:
+
+- **Group Matchups**
+  - View all 6 matchups within a group
+  - See win/draw probabilities for each match
+  - FIFA rankings-based calculations
+  - Bookmaker-style odds display
+
+- **Individual Matchups**
+  - Detailed odds for specific team matchups
+  - Win/draw/loss probabilities
+  - Penalty shootout probabilities (for knockout matches)
+  - Multiple bookmaker odds comparison
+
+- **Probability Calculations**
+  - Based on FIFA rankings (as of November 2025)
+  - Monte Carlo simulation (10,000 iterations)
+  - Deterministic seeded random generation
+  - Cached results for performance
+
+### 📅 Fixtures Page
+Complete match schedule viewer:
+
+- **Match Schedule**
+  - All group stage matches with dates and times
+  - All knockout stage matches
+  - Venue information
+  - Match status indicators
+  - Filter by stage (Group, Round of 32, Round of 16, etc.)
+
+- **Team Information**
+  - Team flags and country codes
+  - Match details and context
+  - Navigation to betting odds
+
+### 🎪 Draw Simulator
+Simulate the official World Cup group stage draw:
+
+- Random team assignment to 12 groups
+- Support for 48 qualified teams
+- Save draw results
+- View draw outcomes
+
+## Technical Features
+
+### FIFA-Compliant Algorithms
+- **Knockout Bracket Generation**: Implements the official FIFA algorithm for Round of 32 matchups
+  - Handles all 495 possible combinations of advancing third-place teams
+  - Lookup table generated from official FIFA possibilities
+  - Accurate bracket structure matching official tournament format
+
+### Data Integration
+- **Match Schedule**: Complete integration with official match schedule
+  - Dates, times, and venues for all matches
+  - Group stage and knockout stage coverage
+  - Match ID system for tracking
+
+- **FIFA Rankings**: Hardcoded FIFA rankings (as of November 2025)
+  - Used for probability calculations
+  - Supports 100+ teams
+  - Handles team name variations
+
+### User Experience
+- **Responsive Design**: Modern glassmorphism UI
+- **Real-time Updates**: Instant feedback on selections
+- **Visual Feedback**: Color-coded selections and states
+- **Navigation**: Easy switching between prediction views
+- **Persistence**: Automatic save/load of predictions
 
 ## Project Structure
 
 ```
-CS390_TeamProject/
+WorldCupSim/
 │
 ├── backend/                        # Node.js/Express Backend Server
 │   ├── .env                        # Environment variables (MongoDB URI, JWT_SECRET, PORT)
 │   ├── db.js                       # MongoDB connection configuration
 │   ├── server.js                   # Express server entry point
 │   ├── package.json                # Backend dependencies
-│   ├── package-lock.json           # Dependency lock file
 │   │
 │   ├── models/                     # MongoDB Mongoose Models
-│   │   ├── User.js                 # User schema (username, email, password)
+│   │   ├── User.js                 # User schema
 │   │   ├── Bracket.js              # Bracket prediction model
 │   │   ├── Match.js                # Match model
 │   │   └── Team.js                 # Team model
 │   │
 │   ├── routes/                     # API Route Handlers
-│   │   ├── auth.js                 # Authentication routes (POST /auth/login, POST /auth/register)
-│   │   ├── betting.js              # Betting Odds routes   (POST /clear-cache, GET /group-winner, GET /odds)
-│   │   └── glaze.js                 # Glaze routes          (POST /bracket)
+│   │   ├── auth.js                 # Authentication routes
+│   │   ├── betting.js              # Betting Odds & Probability calculations
+│   │   └── [other routes]
 │   │
 │   └── middleware/                 # Express Middleware
-│       └── auth.js                 # JWT authentication middleware (if exists)
+│       └── auth.js                 # JWT authentication middleware
 │
 ├── world-cup-sim/                  # React Frontend Application
-│   ├── public/                     # Static assets
-│   │   └── vite.svg                # Vite logo
-│   │
-│   ├── src/                        # Source code
+│   ├── src/
 │   │   ├── api/                    # API Configuration
-│   │   │   └── api.js              # Axios instance with JWT interceptors
-│   │   │
-│   │   ├── components/             # Reusable React Components
-│   │   │   └── ProtectedRoute.jsx  # Route protection wrapper
+│   │   │   └── api.js              # Axios instance with interceptors
 │   │   │
 │   │   ├── pages/                  # Page Components
-│   │   │   ├── AccountSettingsPage.jsx # User Settings interface
-│   │   │   ├── BettingOddsPage.jsx # Betting Odds interface
-│   │   │   ├── DashboardPage.jsx   # Main dashboard (groups, brackets, knockout)
-│   │   │   ├── DrawSimulatorPage.jsx # Draw simulation interface
-│   │   │   ├── DrawResultPage.jsx  # Display draw results
-│   │   │   ├── LoginPage.jsx       # User login interface
-│   │   │   ├── PredictorPage.jsx   # Predicting Page interface
-│   │   │   ├── RegisterPage.jsx    # User registration interface
-│   │   │   ├── SimulatorPage.jsx   # Simulation Page interface
-│   │   │   ├── AuthPages.css       # Shared auth page styles
-│   │   │   ├── BettingOddsPage.css # Shared betting page styles
-│   │   │   ├── DashboardPage.css   # Dashboard styles
-│   │   │   ├── DrawSimulatorPage.css # Simulator styles
-│   │   │   ├── DrawResultPage.css  # Results page styles
-│   │   │   ├── PredictorPage.css   # Predicting Page styles
-│   │   │   └── SimulatorPage.css   # Simulator Page styles
+│   │   │   ├── PredictorPage.jsx   # Main prediction interface
+│   │   │   ├── SimulatorPage.jsx   # Tournament simulation
+│   │   │   ├── BettingOddsPage.jsx # Odds and probabilities
+│   │   │   ├── FixturesPage.jsx    # Match schedule viewer
+│   │   │   ├── DrawSimulatorPage.jsx # Group draw simulator
+│   │   │   └── DrawResultPage.jsx  # Draw results display
 │   │   │
-│   │   ├── assets/                 # Static assets
-│   │   │   └── react.svg           # React logo
+│   │   ├── data/                   # Data Files
+│   │   │   └── matchSchedule.js    # Official match schedule
 │   │   │
-│   │   ├── App.jsx                 # Main app component (routing setup)
-│   │   ├── App.css                 # Global app styles
-│   │   ├── main.jsx                # Application entry point
-│   │   └── index.css               # Global CSS reset/styles
+│   │   ├── utils/                  # Utility Functions
+│   │   │   ├── knockoutAlgorithm.js # FIFA-compliant bracket algorithm
+│   │   │   └── matchupLookupTable.js # 495 combination lookup table
+│   │   │
+│   │   ├── App.jsx                 # Main app component (routing)
+│   │   └── main.jsx                # Application entry point
 │   │
-│   ├── index.html                  # HTML template
 │   ├── package.json                # Frontend dependencies
-│   ├── package-lock.json           # Dependency lock file
-│   ├── vite.config.js              # Vite build configuration
-│   ├── eslint.config.js            # ESLint configuration
-│   ├── .gitignore                  # Git ignore rules
-│   └── README.md                   # Frontend documentation
+│   └── vite.config.js              # Vite build configuration
 │
-├── template.html                   # HTML template/reference design
-├── possibilities.csv                # FIFA 2026 third-place possibilities data
-└── README.md                       # Project documentation (this file)
+├── possibilities.csv                # FIFA third-place possibilities data
+├── matchSchedule.csv                # Official match schedule data
+└── README.md                       # This file
 ```
 
-## Frontend Setup
+## Setup Instructions
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
+### Frontend Setup
 
-### Installation
-
-1. Navigate to the React app directory:
+1. Navigate to the frontend directory:
 ```bash
 cd world-cup-sim
 ```
@@ -105,25 +225,11 @@ npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173` (default Vite port).
+The application will be available at `http://localhost:5173`.
 
-### Build for Production
+### Backend Setup
 
-```bash
-npm run build
-```
-
-The built files will be in the `dist/` directory.
-
-## Backend Setup
-
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-
-### Installation
-
-1. Navigate to the React app directory:
+1. Navigate to the backend directory:
 ```bash
 cd backend
 ```
@@ -133,107 +239,108 @@ cd backend
 npm install
 ```
 
-3. Start the development server:
+3. Create a `.env` file with:
+```
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+PORT=5001
+```
+
+4. Start the development server:
 ```bash
 npm start
 ```
 
-The application will be available at `http://localhost:5001`.
+The backend will be available at `http://localhost:5001`.
 
+### Build for Production
 
-## Features
+**Frontend:**
+```bash
+cd world-cup-sim
+npm run build
+```
+
+**Backend:**
+The backend runs directly with Node.js - no build step required.
+
+## API Endpoints
 
 ### Authentication
-- User registration with email validation
-- User login with JWT token storage
-- Protected routes requiring authentication
-- Automatic token refresh and 401 error handling
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
 
-### Brackets
-- Create new Brackets
-- Select Standings for Each Group
-- Select Teams in Each Round of the 
-- Have an AI Generated Response on how good your bracket is after completing it
-- ![alt text](https://github.com/cfederoff/cs390teamproject2025/blob/main/GroupStagesScreenshot.png "Logo Title Text 1")
+### Betting Odds
+- `GET /api/odds?team1=...&team2=...&type=...` - Get betting odds for a matchup
+- `GET /api/group-winner?teams=...` - Get group winner probabilities
+- `POST /api/clear-cache` - Clear probability cache
 
-### Draw Simulator
-- Simulate World Cup group stage draws
-- Random team assignment to 8 groups (A-H)
-- Support for 32 qualified teams
-- ![alt text](https://github.com/cfederoff/cs390teamproject2025/blob/main/SimulationScreenShot.png "Logo Title Text 1")
-
-## Stats and Odds
-- See Stats and Odds for Each Group in the World Cup
-- When Selecting the Bracket, see the odds for any combinations of teams facing each other
-![alt text](https://github.com/cfederoff/cs390teamproject2025/blob/main/BettingOddsScreenshot.png "Logo Title Text 1")
-
-## API Integration
-
-The frontend is configured to communicate with a backend API at `http://localhost:5000/api`.
-
-### API Endpoints Used
-
-- **Authentication**
-  - `POST /api/auth/register` - User registration
-  - `POST /api/auth/login` - User login
-
-- **Betting Odds**
-  - `POST /api/clear-cache` - Clears previous odds informations
-  - `GET /api/group-winner` - Finds which teams won each group
-  - `GET /api/odds` - Fetch odds for specific teams
-- **Glazing**
-  - `Post /api/bracket` - Glazes the current bracket made
-
-### API Configuration
-
-The API client is configured in `src/api/api.js`:
-- Base URL: `http://localhost:5000/api`
-- JWT token automatically attached to requests via interceptors
-- Automatic redirect to login on 401 errors
-- Token stored in `localStorage` for persistence
+### Bracket Analysis
+- `POST /api/bracket` - AI-powered bracket analysis (Gemini integration)
 
 ## Technologies Used
 
+### Frontend
 - **React 19** - UI framework
 - **Vite** - Build tool and dev server
 - **React Router DOM** - Client-side routing
 - **Axios** - HTTP client for API calls
-- **CSS3** - Styling with glassmorphism effects
-- **MongoDB** - Database to store User Information
-- **Gemini** - AI powered responses to glaze brackets
+- **CSS3** - Modern styling with glassmorphism effects
 
-## State Management
+### Backend
+- **Node.js** - Runtime environment
+- **Express** - Web framework
+- **MongoDB** - Database (via Mongoose)
+- **JWT** - Authentication tokens
+- **Gemini AI** - Bracket analysis
 
-- `useState` hooks for component-level state
-- `useEffect` hooks for side effects and data fetching
-- `localStorage` for JWT token persistence
-- React Router for navigation state
+### Algorithms & Data
+- **FIFA Official Algorithm** - Knockout bracket generation
+- **Monte Carlo Simulation** - Probability calculations
+- **FIFA Rankings** - Team strength data
 
-## Protected Routes
+## Key Algorithms
 
-Routes requiring authentication:
-- `/dashboard`
-- `/draw-simulator`
-- `/draw-result/:drawId`
+### Knockout Bracket Generation
+The application implements the official FIFA algorithm for generating Round of 32 matchups. With 12 groups, 8 third-place teams advance, creating 495 possible combinations. Each combination results in different matchups according to FIFA's official rules, implemented via a comprehensive lookup table.
 
-Unauthenticated users are automatically redirected to `/login`.
+### Probability Calculations
+Betting odds are calculated using:
+- FIFA rankings as base team strength
+- Monte Carlo simulation (10,000 iterations)
+- Deterministic seeded random generation for consistency
+- Caching for performance optimization
 
-## Styling
+## Screenshots
 
-The application uses a modern design inspired by the template:
-- Gradient backgrounds (`#0a1a2a` to `#003b5c`)
-- Glassmorphism effects with backdrop blur
-- Smooth transitions and hover effects
-- Responsive grid layouts
-- Consistent color scheme with accent colors (`#00c6ff`, `#0072ff`)
+![Group Stages](https://github.com/cfederoff/cs390teamproject2025/blob/main/GroupStagesScreenshot.png)
+
+![Simulation](https://github.com/cfederoff/cs390teamproject2025/blob/main/SimulationScreenShot.png)
+
+![Betting Odds](https://github.com/cfederoff/cs390teamproject2025/blob/main/BettingOddsScreenshot.png)
 
 ## Development Notes
 
-- The `template.html` file in the root directory serves as a design reference
-- Qualified teams are defined in `DrawSimulatorPage.jsx` and can be easily updated
-- API base URL can be changed in `src/api/api.js`
-- All protected routes check for JWT token in `localStorage`
+- The knockout bracket algorithm uses a lookup table generated from `possibilities.csv`
+- Match schedule data is stored in `matchSchedule.js` and `matchSchedule.csv`
+- FIFA rankings are hardcoded in `backend/routes/betting.js` (as of November 2025)
+- Predictions are automatically saved to `localStorage`
+- API base URL can be configured via `VITE_API_BASE_URL` environment variable
 
-Deployment Links
-Front End: https://cs390teamprojectfinalversion.vercel.app
-Back End: https://cs390-teamproject.onrender.com 
+## Deployment
+
+For detailed deployment instructions, see:
+- **Backend Deployment**: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) for step-by-step Render deployment guide
+- **Frontend Deployment**: The frontend is configured for Vercel deployment (see `vercel.json`)
+
+### Quick Links
+- **Live Frontend**: [https://world-cup-sim.vercel.app/](https://world-cup-sim.vercel.app/)
+- **Live Backend API**: [https://wcs-u1fy.onrender.com](https://wcs-u1fy.onrender.com)
+
+## License
+
+This project is part of a CS390 team project.
+
+## Contributing
+
+This is a team project for educational purposes. For questions or issues, please contact the development team.
