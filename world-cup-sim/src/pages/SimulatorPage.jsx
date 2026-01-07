@@ -459,6 +459,7 @@ function SimulatorPage() {
   const [simulating, setSimulating] = useState(false);
   const [simulatedGroups, setSimulatedGroups] = useState(false);
   const [simulatedKnockout, setSimulatedKnockout] = useState(false);
+  const [currentSimulatingStage, setCurrentSimulatingStage] = useState(null); // Track current stage being simulated
   const [openDropdown, setOpenDropdown] = useState(null); // Format: 'groupName-index'
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [dropdownButtonRef, setDropdownButtonRef] = useState(null);
@@ -484,6 +485,7 @@ function SimulatorPage() {
     setCurrentView('groups');
     setSimulatedGroups(false);
     setSimulatedKnockout(false);
+    setCurrentSimulatingStage(null);
     setSelectedMatchInfo(null);
   };
 
@@ -1195,7 +1197,10 @@ function SimulatorPage() {
     setCurrentView('bracket');
   };
 
-  // Simulate knockout stage matches
+  // Helper function to add smooth delay between stages
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Simulate knockout stage matches with smooth stage-by-stage progression
   const simulateKnockoutStage = async () => {
     if (!knockoutBracket) return;
     
@@ -1210,40 +1215,55 @@ function SimulatorPage() {
         thirdPlacePlayoff: knockoutBracket.thirdPlacePlayoff ? knockoutBracket.thirdPlacePlayoff.map(matchup => ({ ...matchup })) : [{ team1: null, team2: null, winner: null, score1: null, score2: null }]
       };
 
-      // Simulate Round of 32
+      // Stage 1: Simulate Round of 32
+      setCurrentSimulatingStage('Round of 32');
       await simulateRound(newBracket, 'left', 0);
       await simulateRound(newBracket, 'right', 0);
       setKnockoutBracket({ ...newBracket }); // Update UI after Round of 32
+      await delay(800); // Smooth transition delay
 
-      // Simulate Round of 16
+      // Stage 2: Simulate Round of 16
+      setCurrentSimulatingStage('Round of 16');
       await simulateRound(newBracket, 'left', 1);
       await simulateRound(newBracket, 'right', 1);
       setKnockoutBracket({ ...newBracket }); // Update UI after Round of 16
+      await delay(800); // Smooth transition delay
 
-      // Simulate Quarterfinals
+      // Stage 3: Simulate Quarterfinals
+      setCurrentSimulatingStage('Quarterfinals');
       await simulateRound(newBracket, 'left', 2);
       await simulateRound(newBracket, 'right', 2);
       setKnockoutBracket({ ...newBracket }); // Update UI after Quarterfinals
+      await delay(800); // Smooth transition delay
 
-      // Simulate Semifinals
+      // Stage 4: Simulate Semifinals
+      setCurrentSimulatingStage('Semifinals');
       await simulateRound(newBracket, 'left', 3);
       await simulateRound(newBracket, 'right', 3);
       setKnockoutBracket({ ...newBracket }); // Update UI after Semifinals
+      await delay(800); // Smooth transition delay
 
-      // Simulate Third Place Playoff
+      // Stage 5: Simulate Third Place Playoff (if applicable)
       if (newBracket.thirdPlacePlayoff && newBracket.thirdPlacePlayoff[0].team1 && newBracket.thirdPlacePlayoff[0].team2) {
+        setCurrentSimulatingStage('Third Place');
         await simulateRound(newBracket, 'thirdPlacePlayoff', 0);
+        setKnockoutBracket({ ...newBracket });
+        await delay(600); // Shorter delay for third place
       }
 
-      // Simulate Final
+      // Stage 6: Simulate Final
+      setCurrentSimulatingStage('Final');
       await simulateRound(newBracket, 'final', 0);
-
       setKnockoutBracket({ ...newBracket }); // Final update
+      
       if (newBracket.final[0].winner) {
         setChampion(newBracket.final[0].winner);
       }
+      
+      setCurrentSimulatingStage(null); // Clear stage indicator
     } catch (error) {
       console.error('Error simulating knockout stage:', error);
+      setCurrentSimulatingStage(null);
     } finally {
       setSimulating(false);
     }
@@ -1515,18 +1535,6 @@ function SimulatorPage() {
                 ? 'Group stage has been simulated. Qualified teams are highlighted in green.'
                 : 'Click "Simulate Group Stage" to simulate all matches and calculate standings.'}
             </p>
-            
-            {!simulatedGroups && (
-              <p className="performance-note" style={{ 
-                fontSize: '0.9em', 
-                color: '#ffa726', 
-                marginTop: '10px',
-                marginBottom: '10px',
-                fontStyle: 'italic'
-              }}>
-                Note: Initial simulation may take up to 10 seconds while calculating probabilities for all matches.
-              </p>
-            )}
             
             <div className="action-section">
               <button 
@@ -1845,17 +1853,23 @@ function SimulatorPage() {
                     </div>
                   )}
                 </div>
-                <div className="simulate-knockout-button" style={{ marginBottom: '15px' }}>
-                  {!simulatedKnockout && (
-                    <p style={{ 
-                      fontSize: '0.85em', 
-                      color: '#ffa726', 
+                <div className="simulate-knockout-button" style={{ marginBottom: '15px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {currentSimulatingStage && (
+                    <div style={{
+                      textAlign: 'center',
                       marginBottom: '10px',
-                      fontStyle: 'italic',
-                      textAlign: 'center'
+                      padding: '8px 16px',
+                      backgroundColor: '#667eea',
+                      color: 'white',
+                      borderRadius: '8px',
+                      fontSize: '0.95em',
+                      fontWeight: '600',
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                      width: '100%',
+                      maxWidth: '300px'
                     }}>
-                      Note: Simulation may take several seconds
-                    </p>
+                      Simulating {currentSimulatingStage}...
+                    </div>
                   )}
                   <button 
                     onClick={simulateKnockoutStage} 

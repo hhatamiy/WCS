@@ -352,15 +352,6 @@ function BettingOddsPage() {
           </div>
         </div>
 
-        {odds?.message && (
-          <div className="info-message">
-            <p>{odds.message}</p>
-            <p className="info-note">
-              Note: Betting odds may not be available for all matchups. 
-              Odds are typically available closer to the actual match date.
-            </p>
-          </div>
-        )}
 
         {odds?.odds && odds.odds.length > 0 ? (
           <div className="odds-section">
