@@ -1599,7 +1599,7 @@ function SimulatorPage() {
                           return (
                             <div key={index} className={`group-team pot-${team.pot}`}>
                               <span className="position-number">{index + 1}.</span>
-                              <span className="team-name">{getCountryCode(team.name)}</span>
+                              <span className="team-name">{team.name}</span>
                               {teamHasAlternatives && currentView === 'groups' && !simulatedGroups && (
                                 <div className="team-dropdown-container" onClick={(e) => e.stopPropagation()}>
                                   <button
@@ -1642,7 +1642,6 @@ function SimulatorPage() {
                                   )}
                                 </div>
                               )}
-                              <span className="pot-badge">Pot {team.pot}</span>
                             </div>
                           );
                         })}
