@@ -275,16 +275,15 @@ function calculateMatchupTop(roundIndex, matchupIndex, totalMatchupsInRound, con
     return topPadding + (spacing * matchupIndex);
   } else {
     // For subsequent rounds, calculate based on parent matchups from previous round
+    // Recursively get the actual positions of the parent matchups to ensure exact alignment
     const parentRoundMatchups = totalMatchupsInRound * 2; // Previous round has 2x matchups
-    const topPadding = 20;
-    const availableHeight = containerHeight - (topPadding * 2);
-    const parentSpacing = availableHeight / (parentRoundMatchups - 1);
+    const parentRoundIndex = roundIndex - 1;
     
     // This matchup comes from parent matchups at indices (2*matchupIndex) and (2*matchupIndex + 1)
-    const parent1Top = topPadding + (parentSpacing * (2 * matchupIndex));
-    const parent2Top = topPadding + (parentSpacing * (2 * matchupIndex + 1));
+    const parent1Top = calculateMatchupTop(parentRoundIndex, 2 * matchupIndex, parentRoundMatchups, containerHeight);
+    const parent2Top = calculateMatchupTop(parentRoundIndex, 2 * matchupIndex + 1, parentRoundMatchups, containerHeight);
     
-    // Return the average - this positions the matchup between its two parents
+    // Return the average - this positions the matchup exactly between its two parents
     return (parent1Top + parent2Top) / 2;
   }
 }
