@@ -1759,3 +1759,39 @@
   }
 }
 
+/* Timezone toggle button styles */
+.timezone-toggle-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin-right: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.timezone-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.timezone-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.kickoff-time-display {
+  display: inline-flex;
+  align-items: center;
+}
+
+.match-info-label {
+  display: inline-flex;
+  align-items: center;
+}
+

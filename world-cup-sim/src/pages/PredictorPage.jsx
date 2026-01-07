@@ -389,6 +389,126 @@ function PredictorPage() {
   const [oddsLoading, setOddsLoading] = useState(false); // Loading state for odds
   const [oddsError, setOddsError] = useState(null); // Error state for odds
 
+  // Timezone preference state - load from localStorage or default to false (show match timezone)
+  const [useLocalTimezone, setUseLocalTimezone] = useState(() => {
+    const saved = localStorage.getItem('timezonePreference');
+    return saved === 'true';
+  });
+
+  // Get user's timezone
+  const getUserTimezone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'America/New_York'; // Fallback
+    }
+  };
+
+  // Map timezone abbreviations to IANA timezone identifiers
+  const getTimezoneId = (abbrev) => {
+    const timezoneMap = {
+      'ET': 'America/New_York',      // Eastern Time
+      'CT': 'America/Chicago',       // Central Time
+      'PT': 'America/Los_Angeles',   // Pacific Time
+      'MT': 'America/Denver'         // Mountain Time (if used)
+    };
+    return timezoneMap[abbrev] || 'America/New_York';
+  };
+
+  // Convert time from match timezone to user's local timezone
+  const convertToLocalTime = (dateString, kickoffTime, matchTimezone) => {
+    if (!dateString || !matchTimezone || !useLocalTimezone) {
+      return { time: kickoffTime, timezone: matchTimezone || '' };
+    }
+
+    try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const [hours, minutes] = kickoffTime.split(':').map(Number);
+      
+      const matchTzId = getTimezoneId(matchTimezone);
+      const userTzId = getUserTimezone();
+      
+      // Create a date string representing the match time
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+      
+      // We need to create a Date object that represents this time in the match timezone
+      // Strategy: Create date in UTC, then find the UTC time that corresponds to our target time in match timezone
+      const testDate = new Date(`${dateStr}Z`);
+      
+      // Format this UTC date in match timezone to see what time it represents there
+      const matchFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: matchTzId,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      
+      let matchTimeStr = matchFormatter.format(testDate);
+      let matchTimeParts = matchTimeStr.match(/(\d{1,2}):(\d{2})/);
+      if (!matchTimeParts) {
+        return { time: kickoffTime, timezone: matchTimezone || '' };
+      }
+      
+      let currentMatchHour = parseInt(matchTimeParts[1]);
+      let currentMatchMin = parseInt(matchTimeParts[2]);
+      let currentMatchMinutes = currentMatchHour * 60 + currentMatchMin;
+      let targetMatchMinutes = hours * 60 + minutes;
+      
+      // Calculate how many minutes to adjust
+      let adjustmentMinutes = targetMatchMinutes - currentMatchMinutes;
+      
+      // Handle day boundaries
+      if (adjustmentMinutes > 720) {
+        adjustmentMinutes -= 1440; // Go back a day
+      } else if (adjustmentMinutes < -720) {
+        adjustmentMinutes += 1440; // Go forward a day
+      }
+      
+      // Adjust the UTC date
+      const adjustedDate = new Date(testDate.getTime() + adjustmentMinutes * 60000);
+      
+      // Format in user's timezone
+      const userFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTzId,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      
+      const userTimeStr = userFormatter.format(adjustedDate);
+      const userTimeParts = userTimeStr.match(/(\d{1,2}):(\d{2})/);
+      
+      if (userTimeParts) {
+        const userHour = parseInt(userTimeParts[1]);
+        const userMin = parseInt(userTimeParts[2]);
+        return { 
+          time: `${String(userHour).padStart(2, '0')}:${String(userMin).padStart(2, '0')}`, 
+          timezone: getTimezoneAbbrev(userTzId)
+        };
+      }
+    } catch (error) {
+      console.error('Error converting timezone:', error);
+    }
+    
+    return { time: kickoffTime, timezone: matchTimezone || '' };
+  };
+
+  // Get timezone abbreviation from IANA identifier
+  const getTimezoneAbbrev = (ianaId) => {
+    const abbrevMap = {
+      'America/New_York': 'ET',
+      'America/Chicago': 'CT',
+      'America/Los_Angeles': 'PT',
+      'America/Denver': 'MT'
+    };
+    return abbrevMap[ianaId] || '';
+  };
+
+  // Save timezone preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('timezonePreference', useLocalTimezone.toString());
+  }, [useLocalTimezone]);
+
   // Helper function to parse date string correctly (avoid UTC timezone issues)
   const parseDateString = (dateString) => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -1768,11 +1888,25 @@ function PredictorPage() {
                         {match.venue && (
                           <span>{match.venue.name}, {match.venue.city}</span>
                         )}
-                        {match.date && match.kickoffTime && (
-                          <span>
-                            {parseDateString(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {match.kickoffTime}{match.timezone ? ` ${match.timezone}` : ''}
-                          </span>
-                        )}
+                        {match.date && match.kickoffTime && (() => {
+                          const converted = convertToLocalTime(match.date, match.kickoffTime, match.timezone);
+                          return (
+                            <span className="kickoff-time-display">
+                              {parseDateString(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+                              <button
+                                className="timezone-toggle-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUseLocalTimezone(!useLocalTimezone);
+                                }}
+                                title={useLocalTimezone ? "Show match timezone" : "Show your timezone"}
+                              >
+                                {useLocalTimezone ? '🌐' : '📍'}
+                              </button>
+                              {' '}{converted.time}{converted.timezone ? ` ${converted.timezone}` : ''}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -1834,12 +1968,27 @@ function PredictorPage() {
                         </span>
                       </div>
                     )}
-                    {selectedMatchInfo.kickoffTime && (
-                      <div className="match-info-item">
-                        <span className="match-info-label">Kickoff Time:</span>
-                        <span className="match-info-value">{selectedMatchInfo.kickoffTime}{selectedMatchInfo.timezone ? ` ${selectedMatchInfo.timezone}` : ''}</span>
-                      </div>
-                    )}
+                    {selectedMatchInfo.kickoffTime && selectedMatchInfo.date && (() => {
+                      const converted = convertToLocalTime(selectedMatchInfo.date, selectedMatchInfo.kickoffTime, selectedMatchInfo.timezone);
+                      return (
+                        <div className="match-info-item">
+                          <span className="match-info-label">Kickoff Time:</span>
+                          <span className="match-info-value">
+                            <button
+                              className="timezone-toggle-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUseLocalTimezone(!useLocalTimezone);
+                              }}
+                              title={useLocalTimezone ? "Show match timezone" : "Show your timezone"}
+                            >
+                              {useLocalTimezone ? '🌐' : '📍'}
+                            </button>
+                            {' '}{converted.time}{converted.timezone ? ` ${converted.timezone}` : ''}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               ) : (

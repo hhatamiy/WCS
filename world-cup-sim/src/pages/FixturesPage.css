@@ -37,6 +37,27 @@
   flex-wrap: wrap;
 }
 
+.timezone-toggle-btn-header {
+  padding: 8px 16px;
+  font-size: 14px;
+  border: 2px solid rgba(255, 200, 0, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  background: rgba(255, 200, 0, 0.2);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timezone-toggle-btn-header:hover {
+  background: rgba(255, 200, 0, 0.3);
+  border-color: rgba(255, 200, 0, 0.7);
+  transform: translateY(-2px);
+}
+
 .nav-btn {
   padding: 8px 16px;
   font-size: 14px;
@@ -517,4 +538,30 @@
   .fixtures-container .group-badge {
     font-size: 10px;
   }
+}
+
+/* Timezone toggle button styles */
+.timezone-toggle-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin-right: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.timezone-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.timezone-toggle-btn:active {
+  transform: scale(0.95);
 }
